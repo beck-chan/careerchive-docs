@@ -7,15 +7,15 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { DocsApiExplorer } from "@/app/docs/_components/DocsApiExplorer";
-import { DocsCallout } from "@/app/docs/_components/DocsCallout";
-import { DocsCodeBlock } from "@/app/docs/_components/DocsCodeBlock";
-import { DocsColumn, DocsColumns } from "@/app/docs/_components/DocsColumns";
-import { DocsGear } from "@/app/docs/_components/DocsGear";
-import { DocsLock } from "@/app/docs/_components/DocsLock";
-import { DocsSnippetTab } from "@/app/docs/_components/DocsSnippetTab";
-import { DocsTab, DocsTabset } from "@/app/docs/_components/DocsTabset";
-import { DocsTaskItem } from "@/app/docs/_components/DocsTaskItem";
+import { DocsApiExplorer } from "@/app/(site)/docs/_components/DocsApiExplorer";
+import { DocsCallout } from "@/app/(site)/docs/_components/DocsCallout";
+import { DocsCodeBlock } from "@/app/(site)/docs/_components/DocsCodeBlock";
+import { DocsColumn, DocsColumns } from "@/app/(site)/docs/_components/DocsColumns";
+import { DocsGear } from "@/app/(site)/docs/_components/DocsGear";
+import { DocsLock } from "@/app/(site)/docs/_components/DocsLock";
+import { DocsSnippetTab } from "@/app/(site)/docs/_components/DocsSnippetTab";
+import { DocsTab, DocsTabset } from "@/app/(site)/docs/_components/DocsTabset";
+import { DocsTaskItem } from "@/app/(site)/docs/_components/DocsTaskItem";
 import { HomeFigureCycle } from "@/components/HomeFigureCycle";
 import { HomeGalleryButton } from "@/components/HomeGalleryButton";
 import { WordmarkText } from "@/components/WordmarkText";

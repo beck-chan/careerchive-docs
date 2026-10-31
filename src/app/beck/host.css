@@ -1,0 +1,38 @@
+/* The docs theme lives on <html>. These rules keep it from painting the packaged app. */
+
+html:has(.careerchive-app),
+html:has(.careerchive-app) body {
+  background: #ffffff;
+  scrollbar-gutter: auto;
+  color-scheme: light;
+}
+
+html:has(.careerchive-app[data-theme="dark"]),
+html:has(.careerchive-app[data-theme="dark"]) body {
+  background: #4f263d;
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] .careerchive-app .app-wordmark-mark.is-light {
+  display: block;
+}
+
+html[data-theme="dark"] .careerchive-app .app-wordmark-mark.is-dark {
+  display: none;
+}
+
+html[data-theme="dark"] .careerchive-app[data-theme="dark"] .app-wordmark-mark.is-light {
+  display: none;
+}
+
+html[data-theme="dark"] .careerchive-app[data-theme="dark"] .app-wordmark-mark.is-dark {
+  display: block;
+}
+
+html[data-theme="dark"] .careerchive-app .app-wordmark-career {
+  color: var(--blossom);
+}
+
+html[data-theme="dark"] .careerchive-app[data-theme="dark"] .app-wordmark-career {
+  color: var(--soft-white);
+}

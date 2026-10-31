@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { Chonburi, Instrument_Serif, Jost } from "next/font/google";
-import { SiteChrome } from "@/components/SiteChrome";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -50,7 +49,7 @@ export default function RootLayout({
           id="theme-boot"
           dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
-        <SiteChrome>{children}</SiteChrome>
+        {children}
       </body>
     </html>
   );

@@ -23,6 +23,7 @@ module.exports = function snippetWatchLoader(source) {
     root,
     "src",
     "app",
+    "(site)",
     "docs",
     "(article)",
     "_snippets",

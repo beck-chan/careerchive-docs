@@ -29,7 +29,7 @@ function snapshot(root: string) {
     path.join(root, "src", "app", "globals.css"),
     path.join(root, "next.config.ts"),
   ];
-  listFiles(path.join(root, "src", "app", "docs"), files);
+  listFiles(path.join(root, "src", "app", "(site)", "docs"), files);
   listFiles(path.join(root, "src", "lib", "mdx"), files);
   listFiles(path.join(root, "src", "lib", "docs"), files);
 

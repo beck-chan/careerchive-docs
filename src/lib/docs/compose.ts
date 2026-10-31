@@ -8,12 +8,12 @@ import { VFile } from "vfile";
 import remarkDocsSyntax, {
   rewriteDocsMarkdown,
 } from "../mdx/remark-docs-syntax.mjs";
-import { DOCS_NAV_SECTIONS } from "../../app/docs/_nav/docs-nav-data";
+import { DOCS_NAV_SECTIONS } from "../../app/(site)/docs/_nav/docs-nav-data";
 import type { ComposedDoc, ComposedSection, DocsSearchDoc } from "./searchTypes";
 
 export type { ComposedDoc, ComposedSection, DocsSearchDoc } from "./searchTypes";
 
-const DOCS_ROOT = path.join(process.cwd(), "src/app/docs");
+const DOCS_ROOT = path.join(process.cwd(), "src/app/(site)/docs");
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 
 type MdastNode = {
@@ -250,7 +250,7 @@ function gitDocsSource(ref: string): DocsSource {
     "--name-only",
     verified,
     "--",
-    "src/app/docs",
+    "src/app/(site)/docs",
   ]);
   const files = new Set(
     listed
@@ -282,7 +282,7 @@ function gitDocsSource(ref: string): DocsSource {
     },
     slug(filePath) {
       const rel = toPosix(filePath);
-      const prefix = "src/app/docs/";
+      const prefix = "src/app/(site)/docs/";
       const rest = rel.startsWith(prefix) ? rel.slice(prefix.length) : rel;
       return slugFromDocsRel(path.posix.dirname(rest));
     },

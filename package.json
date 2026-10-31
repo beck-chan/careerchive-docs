@@ -9,8 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "lint:a11y": "eslint src --ignore-pattern \"src/app/docs/**\" --no-config-lookup --config eslint.a11y.config.mjs",
-    "lint:a11y-docs": "eslint src/app/docs --no-config-lookup --config eslint.a11y.config.mjs",
+    "lint:a11y": "eslint src --ignore-pattern \"src/app/[(]site[)]/docs/**\" --no-config-lookup --config eslint.a11y.config.mjs",
+    "lint:a11y-docs": "eslint \"src/app/(site)/docs\" --no-config-lookup --config eslint.a11y.config.mjs",
     "sync-docs": "node --import tsx/esm scripts/sync-docs.ts"
   },
   "dependencies": {
