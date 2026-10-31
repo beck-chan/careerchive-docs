@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 import createMDX from "@next/mdx";
+import { withCareerChiveConfig } from "career-chive/config";
 
 const root = process.cwd();
 
@@ -73,4 +74,4 @@ function withSnippetWatch(config: NextConfig): NextConfig {
   return config;
 }
 
-export default withSnippetWatch(withMDX(nextConfig));
+export default withSnippetWatch(withMDX(withCareerChiveConfig(nextConfig)));
