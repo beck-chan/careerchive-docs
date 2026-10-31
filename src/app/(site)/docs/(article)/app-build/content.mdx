@@ -5,9 +5,9 @@ subtitle: How was the CareerChive application implemented?
 # Application Build
 
 ::: {.callout}
-# CareerChive is a one-user Next.js archive of organizations and daily logs, with optional login.
+# CareerChive is Next.js application with an optional login for one admin user.
 
-- [`src/entries/frame.tsx`](https://github.com/beck-chan/career-chive/blob/main/src/entries/frame.tsx){.blank} loads the archive, then renders [`AppChrome`](https://github.com/beck-chan/career-chive/blob/main/src/components/AppChrome.tsx){.blank} around every page.
+- [`src/entries/frame.tsx`](https://github.com/beck-chan/career-chive/blob/main/src/entries/frame.tsx){.blank} loads the archive of daily logs for organizations, then renders [`AppChrome`](https://github.com/beck-chan/career-chive/blob/main/src/components/AppChrome.tsx){.blank} around every page.
 - [`src/app/page.tsx`](https://github.com/beck-chan/career-chive/blob/main/src/app/page.tsx){.blank} renders [`ArchiveView`](https://github.com/beck-chan/career-chive/blob/main/src/components/ArchiveView.tsx){.blank} for a day's log.
 - [`src/app/organizations/page.tsx`](https://github.com/beck-chan/career-chive/blob/main/src/app/organizations/page.tsx){.blank} renders [`SettingsForm`](https://github.com/beck-chan/career-chive/blob/main/src/components/SettingsForm.tsx){.blank} for tracked organizations.
 - Compile-time switches live in [`src/lib/flags.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/flags.ts){.blank}.

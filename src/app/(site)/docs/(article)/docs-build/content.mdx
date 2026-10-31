@@ -3,3 +3,214 @@ subtitle: How are these docs implemented?
 ---
 
 # Documentation Build
+
+::: {.callout}
+# Docs are compiled by [`@next/mdx`](https://www.npmjs.com/package/@next/mdx){.blank}.
+
+- Each documentation guide is a [`page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/quickstart/page.tsx){.blank} that imports [`./content.mdx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/quickstart/content.mdx){.blank} (the actual markdown content), wrapped in [`DocsArticle`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsArticle.tsx){.blank}. [`DocsShell`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsShell.tsx){.blank} places the sidebar and the table of contents beside that article.
+- [`src/app/(site)/docs/layout.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/layout.tsx){.blank} wraps every docs route with search and the chatbot. Guide pages add [`src/app/(site)/docs/(article)/layout.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/layout.tsx){.blank}.
+- [`DocsNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/DocsNav.tsx){.blank} builds the sidebar navigation from [`docs-nav-data.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/docs-nav-data.ts){.blank}.
+:::
+
+## Docs-Only Build
+
+Our custom `npm run docs` script starts Next with `FLAG_APP=false` so `/beck` is rewritten to a 404 and the CareerChive application is not served. `/` and `/docs` still run.
+
+Defined as a [`package.json`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} script, `npm run docs` calls [`scripts/docs-dev.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/docs-dev.mjs){.blank}, which starts the same `next dev` as `npm run dev`, then sets `FLAG_APP=false` on that process:
+
+- [`src/lib/flags.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/flags.ts){.blank} reads that environment variable as `flags.app`. Default is on.
+- [`src/proxy.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/proxy.ts){.blank} rewrites `/beck` while that flag is off.
+- [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} lists `FLAG_APP` under `env` so Next can send it to the browser. Unset stays `true`.
+
+[`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} wraps that config with [`withCareerChiveConfig()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/withCareerChiveConfig.ts){.blank} so `/beck` can mount the archive when the flag is on. See [Application Build](/docs/app-build).
+
+In development, [`DocsLivePreviewScript`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsLivePreviewScript.tsx){.blank} polls [`/docs/watch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/watch/route.ts){.blank} and reloads the open docs page when a file under `src/app/(site)/docs`, `src/lib/mdx`, or `src/lib/docs` changes, or when `src/mdx-components.tsx`, `src/app/globals.css`, or `next.config.ts` changes. That route is off outside development. The same config watches `_snippets`, so a snippet edit rebuilds the guide that imports it.
+
+## Basics & Custom Theme
+
+Documentation styles live in [`src/app/globals.css`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/globals.css){.blank}, loaded for the whole site. The CareerChive application adds `career-chive/styles.css` and [`src/app/beck/host.css`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/beck/host.css){.blank} only on `/beck`. The docs styles work together with:
+
+::: {.tabset}
+
+# next.config.ts
+
+[`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} registers [`remark-gfm`](https://www.npmjs.com/package/remark-gfm){.blank} (GitHub-flavoured markdown) and the custom [Remark](https://www.npmjs.com/package/remark){.blank} plugin [`remark-docs-syntax.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/mdx/remark-docs-syntax.mjs){.blank}, which allows:
+
+- Defining subtitle and `search: false` within a YAML frontmatter block
+- Using `:::` fences for formatting content
+- Using shortcodes: `{.lock}` ({.lock}) / `{.gear}` ({.gear}) / `{.select}` ({.select}) / `{.insert}` ({.insert}) / `{.update}` ({.update}) / `{.delete}` ({.delete}) / `{.get}` ({.get}) / `{.post}` ({.post}) / `{.put}` ({.put}) / `{.patch}` ({.patch}) / `{.button}` (button link) / `{.blank}` (`target="_blank"`) / `[text]{.smallcaps}` ([small caps]{.smallcaps})
+
+The Remark plugin also pulls page metadata out of the paired `content.mdx` so `page.tsx` can import it:
+
+- `title` — The `#` heading, which informs the browser tab. [`DocsArticle`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsArticle.tsx){.blank} shows it in the page header, and the article hides that first `#`.
+- `frontmatter` — The YAML defined at the top of the page. `subtitle` is the line under that title.
+- `toc` — `##` / `###` headings, including headings brought in from a snippet. Headings inside a callout or a tabset are left out.
+
+[`DocsToc`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsToc.tsx){.blank} builds the on-page table of contents from those same headings.
+
+`next.config.ts` also registers [Rehype](https://www.npmjs.com/package/rehype){.blank} plugins:
+
+- [`rehype-docs-slug.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/mdx/rehype-docs-slug.mjs){.blank} adds `id` to each heading from its text so that anchor links are functional.
+- [`rehype-docs-highlight.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/mdx/rehype-docs-highlight.mjs){.blank} runs [`rehype-highlight`](https://www.npmjs.com/package/rehype-highlight){.blank} with the languages used in the docs: bash, gherkin, javascript, markdown, sql, typescript, xml, and yaml.
+
+# src/mdx-components.tsx
+
+[`src/mdx-components.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/mdx-components.tsx){.blank} runs last at render, swapping native MDX tags for custom styled ones, and registering the fence components so that they display correctly:
+
+- `h1` / `h2` / `h3` become `.mdx-title` / `.mdx-heading` / `.mdx-subheading`
+- `pre` becomes `DocsCodeBlock`
+- `table` gets `.docs-table`
+- `li` stays a list item, or `DocsTaskItem` for `- [x]`, which are interactive checkboxes
+- `DocsCallout` becomes a callout box
+- `DocsColumns` becomes mobile-responsive columns
+- `DocsTabset` becomes a mobile-responsive tabbed or drop-down section
+
+:::
+
+## Documentation Pages
+
+### Landing Page
+
+The main documentation landing page (`/docs`) lives at [`src/app/(site)/docs/page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/page.tsx){.blank}, and is built by React, not MDX. It is outside `(article)`, so the sidebar is not on this page:
+
+- A `.docs-index` wrapper is what switches the layout from a guide to a landing.
+- Card titles and subtitles come from each guide's `content.mdx` through [`docs-page-meta.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/docs-page-meta.ts){.blank}.
+
+This landing page:
+
+- Reads `DOCS_NAV_SECTIONS` from [`_nav/docs-nav-data.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/docs-nav-data.ts){.blank}.
+- Renders `Installation` / `Guides` / `Reference` / `Internal` as sections of cards. Quickstart is the highlighted card.
+- Puts `Internal` in a collapsible group.
+
+### Content Pages
+
+Since every guide is wrapped in [`src/app/(site)/docs/(article)/layout.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/layout.tsx){.blank}, the per-page [`page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/quickstart/page.tsx){.blank} defines the rest.
+
+::: {.tabset}
+
+# Guide Pages
+
+[`DocsShell`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsShell.tsx){.blank} is the sidebar ([`DocsNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/DocsNav.tsx){.blank}) and the right rail. On a guide, that rail is [`DocsToc`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsToc.tsx){.blank}.
+
+# API Library
+
+The API Library (`/docs/api`) keeps that sidebar. [`DocsRail`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsRail.tsx){.blank} swaps the table of contents for [`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank}. The explorer is the [`DocsApiExplorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiExplorer.tsx){.blank} frame inside the article.
+
+:::
+
+## API Library
+
+The API Library is a hybrid page ([`src/app/(site)/docs/(article)/api/page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/page.tsx){.blank}) — it renders [`content.mdx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/content.mdx){.blank}, and that file mounts [`DocsApiExplorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiExplorer.tsx){.blank}, a customized [Scalar API](https://scalar.com/){.blank} explorer.
+
+The explorer catalogs operations from a live PostgREST OpenAPI document. [`loadDatabaseOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/loadDatabaseOpenApi.ts){.blank} fetches `{NEXT_PUBLIC_SUPABASE_URL}/rest/v1/` with `SUPABASE_SECRET_KEY` so tables without an `anon` policy still appear. It then drops the docs chatbot tables and the functions that maintain them.
+
+::: {.callout}
+Test Request is hidden. The explorer shows the CareerChive Data API for reading.
+
+:::
+
+### Live OpenAPI
+
+::: {.tabset}
+
+# loadDatabaseOpenApi.ts
+
+[`loadDatabaseOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/loadDatabaseOpenApi.ts){.blank}:
+
+- Caches the fetch (React `cache()` plus a 60-second revalidate). Guides do not fetch OpenAPI. The API Library loads it when the page or [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank} is opened.
+- [`swaggerToOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/swaggerToOpenApi.ts){.blank} turns the PostgREST document into OpenAPI 3.1.
+- After fetch it stamps the CareerChive API `info` title and description, and `apikey` security on every operation. `servers` are removed.
+- Drops `docs_section`, `docs_query_embedding`, `docs_chat_session`, `docs_chat_message`, `docs_chat_limits`, and the functions that serve them (`search_docs_sections`, `match_docs_sections`, `consume_docs_chat_quota`, and the other hidden RPCs).
+- Fills tag descriptions for the archive tables, ChiveBot tables, and `ensure_generated_days`.
+- [`typesToOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/typesToOpenApi.ts){.blank} applies that `apikey` security. [`apiCatalog.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/apiCatalog.ts){.blank} turns the same spec into the rail's tags and operations, using Scalar's tag anchors.
+
+# layout.tsx
+
+[`layout.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/layout.tsx){.blank}:
+
+- Shared docs chrome only (search provider + chatbot). It does not fetch OpenAPI.
+- On `/docs/api`, [`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank} loads the catalog and jumps the explorer to that tag or operation. Until the catalog arrives, the rail is empty. [`DocsNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/DocsNav.tsx){.blank} stays the usual docs links. Scalar's own sidebar stays inside the explorer frame. On a narrow screen, [`DocsApiMobileNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiMobileNav.tsx){.blank} opens that sidebar over the frame.
+
+:::
+
+### Scalar API Explorer
+
+::: {.tabset}
+
+# `DocsApiExplorer`
+
+[`DocsApiExplorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiExplorer.tsx){.blank}:
+
+- Loads the [`@scalar/api-reference`](https://www.npmjs.com/package/@scalar/api-reference){.blank} browser bundle from [`/docs/api/scalar-standalone`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/scalar-standalone/route.ts){.blank} inside [`/docs/api/explorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/explorer/route.ts){.blank}. [`api/content.mdx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/content.mdx){.blank} mounts that frame.
+- The explorer route inlines the OpenAPI document and follows the site light or dark theme.
+- On a narrow screen the frame sets `data-layout="mobile"`, which hides Scalar's sidebar until the mobile API menu opens it.
+
+# `scalarConfig.ts`
+
+[`scalarConfig.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/scalarConfig.ts){.blank}:
+
+- Turns Scalar's own theme off and injects `customCss` that remaps Scalar onto CareerChive tokens.
+- Hides Scalar's search bar. **Search the API** in the right rail filters the catalog and jumps the explorer.
+- Hides the Models section (`hideModels`).
+- Starts with every tag collapsed (`defaultOpenAllTags` / `defaultOpenFirstTag` off). Scalar's sidebar matches: section headings stay collapsed until that heading is opened. Click an operation to jump to that call.
+- Hides **Test Request** (`hideTestRequestButton`).
+
+:::
+
+## Search & LLM Ingestion
+
+::: {.callout}
+# [`composeDocsCorpus`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/compose.ts){.blank} reads each `content.mdx` page under `src/app/(site)/docs`, inserts shared `_snippets`, and skips pages with `search: false`.
+
+- Humans search that copy with Search or Search the API.
+- Large language models (LLMs) find it through [`/llms.txt`](/llms.txt){.blank} and `/docs/<slug>.md`.
+
+Nothing is hand-maintained for search or LLM catalogs. On each deploy, compose re-reads `.mdx` pages when `/docs/search-index`, `/llms.txt`, or `/docs/<slug>.md` are built — not on every documentation page render.
+:::
+
+::: {.tabset}
+
+# User Guide Search
+
+**Search** in the sidebar, on the landing page, or with `Ctrl`+`K` / `⌘`+`K` opens the shared overlay powered by [`DocsSearch.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsSearch.tsx){.blank}:
+
+- [`DocsSearchProvider`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsSearch.tsx){.blank} loads [`/docs/search-index`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/search-index/route.ts){.blank} the first time Search opens. Until the index arrives the overlay shows **Indexing…**. The browser ranks that JSON with MiniSearch.
+- [`searchTerms.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/searchTerms.ts){.blank} expands light English inflections at index and query time (`managing` ↔ `manage`), with prefix match and a bit of fuzzy room on longer terms. A heading outranks a title, which outranks the section name, which outranks the body.
+
+**What Gets Indexed**
+
+- Host pages only (`**/content.mdx`); `_snippets` are never rendered or indexed independently
+- Snippet imports are inlined into the host before flattening headings and body
+- Pages with `search: false` are omitted (Docs Reference)
+- One overview chunk per page, plus one chunk per heading that has body text
+- OpenAPI / Scalar operations are not returned in this search — only docs `.mdx` files (including `/docs/api` prose from `api/content.mdx`)
+
+# API Library Search
+
+On the API Library page (`/docs/api`), the right rail is **Search the API** ([`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank}). It filters tags and operations from [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank} and jumps the explorer to that anchor. The sidebar **Search** control still opens the user guide overlay.
+
+# LLM Ingestion
+
+Agents follow **discover → fetch → cite** against the same composed guides the user guide search uses.
+
+**`/llms.txt`**
+
+[`src/app/llms.txt/route.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/llms.txt/route.ts){.blank} serves a plain-text catalog from [`buildLlmsTxt()`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/llmIngestion.ts){.blank}:
+
+- One line per indexed guide with HTML and `.md` links
+- Grouped by nav section when available
+- A short API pointer to `/docs/api` (Scalar) — no OpenAPI schema dump
+- Same opt-out as the user guide search (`search: false`)
+
+**`/docs/<slug>.md`**
+
+[`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} rewrites `/docs/:path*.md` to the handler under [`src/app/(site)/docs/raw/`](https://github.com/beck-chan/careerchive-docs/tree/main/src/app/%28site%29/docs/raw){.blank}:
+
+- Each response is the composed markdown for that host (`#` title, sections, inlined snippets). Unknown or opted-out slugs return `404`.
+- There are no mirrors of individual Scalar operations.
+
+:::
+
+## Accessibility
+
+Along with checking pages with [Chrome's Lighthouse accessibility audit](https://developer.chrome.com/docs/accessibility){.blank}, as part of pull request checks, [a11y lint](https://github.com/beck-chan/careerchive-docs/blob/main/.github/workflows/lint-a11y-docs-check.yaml){.blank} runs a spot check on all documentation pages to ensure they are somewhat accessible and any errors discovered are patched before deployment.

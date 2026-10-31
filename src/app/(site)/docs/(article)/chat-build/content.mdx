@@ -3,3 +3,96 @@ subtitle: How was the docs chatbot implemented?
 ---
 
 # Docs Chat Build
+
+::: {.callout}
+
+# Supabase `docs_section` stores MDX chunks and Gemini embeddings synced from a CareerChive docs branch, and Gemini answers from those rows.
+
+- [`composeDocsCorpus({ forIndex: true, gitRef })`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/compose.ts){.blank} builds chunk text from MDX under [`src/app/(site)/docs`](https://github.com/beck-chan/careerchive-docs/tree/main/src/app/%28site%29/docs){.blank} for `docs_section`.
+- [`scripts/sync-docs.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/sync-docs.ts){.blank} embeds chunks and upserts them into `docs_section`.
+- [`DocsChat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsChat.tsx){.blank} is the [ask the documentation]{.smallcaps} bubble on every docs page that talks to [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank}.
+
+:::
+
+## Docs Indexing
+
+- Pages with `search: false` are left out of `docs_section`. The same skip applies to user guide search and [`/llms.txt`](/llms.txt){.blank}. Indexed rows are stored without a `public` flag, and [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank} retrieves from those rows as written.
+- Sync reads a Git ref. User guide search and [`/llms.txt`](/llms.txt){.blank} read the working tree when those routes are built.
+
+::: {.tabset}
+
+# compose.ts
+
+[`src/lib/docs/compose.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/compose.ts){.blank} builds the text that later goes into `docs_section`. [`npm run sync-docs`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} calls it as `composeDocsCorpus({ forIndex: true, gitRef: branch })`:
+
+- Reads the docs MDX files from a Git ref (`BRANCH`, default `main`).
+- Shared `_snippets` files are pasted into the page that imports them, so the index stores the full wording, not an import line.
+- A page with `search: false` is skipped. `forIndex` keeps the same pages as user guide search.
+- A page becomes one overview chunk plus one chunk per heading that has body text (the heading's `href` may include `#anchor`).
+
+# sync-docs.ts
+
+[`npm run sync-docs`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} runs [`scripts/sync-docs.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/sync-docs.ts){.blank} to embed that text and upsert it into `docs_section`. It needs `DOCS_GEMINI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SECRET_KEY`:
+
+- Gemini (`gemini-embedding-001`, 768 dimensions, `RETRIEVAL_DOCUMENT`) turns chunks into vectors in batches of 20 for meaning search.
+- Each chunk is stored with a `content_hash` of that text. A matching hash skips Gemini and the write.
+- Title, heading, and body fill a weighted `search_vector` on the table (English full text, so "running" and "run" can match). A title match outranks a heading, and a heading outranks the body. Postgres generates that column. The upsert leaves it alone.
+- Rows are upserted with the Supabase `service_role` client ([`createServiceClient()`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/supabase/service.ts){.blank}). Chunk ids that disappeared from the corpus are deleted.
+- Vectors already computed stay in `internal/docsbot/embed-cache.json` (gitignored), so a machine that embedded a chunk can skip Gemini when the row is missing. A merged docs change on `main`, or a manual run of [Sync docs index](https://github.com/beck-chan/careerchive-docs/blob/main/.github/workflows/sync-docs.yml){.blank}, runs the same script. Actions uses `content_hash` because that cache file is not in the repo.
+
+:::
+
+## Chatbot Interface
+
+Clicking the [ask the documentation]{.smallcaps} button ([`DocsChat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsChat.tsx){.blank}) opens the [`DocsChatPanel`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsChatPanel.tsx){.blank}. [`/docs/chat/route.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank}:
+
+- Restores message history if the browser has a `docs_chat_id` cookie. ({.get})
+- Looks up matching docs in `docs_section`, then asks Gemini to write a summary from those excerpts only on **Send**. ({.post})
+- [Clears the message history](#chat-history) by dropping the current `docs_chat_id` cookie and the matching Supabase session when **Clear Chat** is clicked. ({.delete})
+
+::: {.tabset}
+
+# Retrieval
+
+- Gemini (`gemini-embedding-001`, 768 dimensions, `RETRIEVAL_QUERY`) turns the question into a vector so pages can match by meaning, not only by the same words. If embed quota or high demand is hit, keyword search still runs.
+- The same wording reuses `docs_query_embedding` ([`scripts/docs-chat.sql`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/docs-chat.sql){.blank}). The row ID is a hash of the question, so the question text is not stored. The server instance also keeps vectors it has already loaded, and a trigger keeps the newest 200 rows. Row-level security is on with no `anon` / `authenticated` policies. [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank} reads and writes those rows with the `service_role` client.
+- Postgres then runs two lookups — wording match (`search_docs_sections`, ranked on `search_vector`) and meaning match (`match_docs_sections`, cosine distance). Each lookup keeps up to 20 rows. Those ranked lists are combined (RRF) in [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank} so a page that does well on either can still surface.
+- At most three pages are kept. A page is dropped when its combined score is under 65% of the best hit. If wording search returned any pages, a page that matched only by meaning is dropped unless its score is at least 85% of the best hit.
+- Short words such as `api` and `add` are kept for matching (three characters or more).
+- If a heading on that page matches the question, that heading's excerpt is used instead of the page overview.
+
+# Answers
+
+- Gemini (`gemini-3.6-flash`) writes the reply from those retrieved excerpts only — it does not read the rest of the docs. If that model is unavailable, the same prompt runs on `gemini-flash-lite-latest`.
+- It answers from those excerpts even when they are brief, and only says "I could not find that information in the docs. Try phrasing the question differently, or ask another question." if the excerpts are about a different topic. That same sentence is the whole reply when no page is kept.
+- Answers are instructed not to invent pages, fabricate information, or provide general advice unrelated to the CareerChive application.
+- The stream lists **Relevant Guides** (links to those pages) first, then **Summary**.
+- The same browser IP is hashed and limited to 5 questions per hour and 10 per day ([`consumeDocsChatRateLimit`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs-chat-limit.ts){.blank}), stored in `docs_chat_limits`.
+
+:::
+
+## Chat History
+
+- `docs_chat_session`, `docs_chat_message`, and `docs_chat_limits` in Supabase, created by [`scripts/docs-chat.sql`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/docs-chat.sql){.blank}, store chat history per browser and chat IP quotas. That file also creates `docs_section` and `docs_query_embedding`.
+- The browser never talks to these tables — row-level security is on with no `anon` / `authenticated` policies. [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank} reads and writes them with the `service_role` client. Quotas go through `consume_docs_chat_quota` on that same client.
+
+::: {.tabset}
+
+# `docs_chat_session`
+
+- `docs_chat_session` is one conversation — cookie `docs_chat_id` (httpOnly, path `/`, five years) stores that row's ID so opening [ask the documentation]{.smallcaps} again restores the same thread.
+- **Send** upserts that session (a leftover cookie still captures) and writes the question immediately, then the reply after Gemini finishes.
+- **Clear Chat** deletes that cookie and this session row.
+
+# `docs_chat_message`
+
+- `docs_chat_message` is each turn in that conversation — the user's question or the assistant's reply (`role`), the wording (`content`), and for replies the retrieved page links (`sources`).
+- Deleting a session deletes associated messages.
+
+# `docs_chat_limits`
+
+- `docs_chat_limits` is the chat IP quota store — one row per hashed IP window (`key`), how many questions have been used (`points`), and when that window expires (`expire`). [`consume_docs_chat_quota`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/docs-chat.sql){.blank} writes these rows.
+- **Send** hashes the browser IP and counts 5 questions per hour and 10 per day ([`consumeDocsChatRateLimit`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs-chat-limit.ts){.blank}).
+- **Clear Chat** does not reset quotas.
+
+:::
