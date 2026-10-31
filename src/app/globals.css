@@ -2413,6 +2413,17 @@ html[data-theme="dark"] .mdx-page :not(pre) > code {
   color: #c6b6cd;
 }
 
+.docs-article a > code {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.docs-article a:hover > code,
+.docs-article a:focus-visible > code,
+.docs-article .docs-bot-api a > code {
+  text-decoration: none;
+}
+
 .mdx-page pre,
 .mdx-page code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono",
@@ -2572,6 +2583,64 @@ html[data-theme="dark"] .mdx-page :not(pre) > code {
 
 .mdx-page strong {
   font-weight: 700;
+}
+
+.docs-api-verb {
+  display: inline;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.docs-api-nav-method[data-method="GET"] {
+  color: #0072bd;
+}
+
+.docs-api-nav-method[data-method="SELECT"] {
+  color: #5203d1;
+}
+
+.docs-api-nav-method[data-method="POST"],
+.docs-api-nav-method[data-method="INSERT"] {
+  color: #069061;
+}
+
+.docs-api-nav-method[data-method="PUT"] {
+  color: #ff5800;
+}
+
+.docs-api-nav-method[data-method="PATCH"],
+.docs-api-nav-method[data-method="UPDATE"] {
+  color: #edbe20;
+}
+
+.docs-api-nav-method[data-method="DELETE"] {
+  color: #ef0006;
+}
+
+html[data-theme="dark"] .docs-api-nav-method[data-method="GET"] {
+  color: #4eb3ec;
+}
+
+html[data-theme="dark"] .docs-api-nav-method[data-method="SELECT"] {
+  color: #b191f9;
+}
+
+html[data-theme="dark"] .docs-api-nav-method[data-method="POST"],
+html[data-theme="dark"] .docs-api-nav-method[data-method="INSERT"] {
+  color: #00b648;
+}
+
+html[data-theme="dark"] .docs-api-nav-method[data-method="PUT"] {
+  color: #ff8d4d;
+}
+
+html[data-theme="dark"] .docs-api-nav-method[data-method="PATCH"],
+html[data-theme="dark"] .docs-api-nav-method[data-method="UPDATE"] {
+  color: #ffc90d;
+}
+
+html[data-theme="dark"] .docs-api-nav-method[data-method="DELETE"] {
+  color: #dc1b19;
 }
 
 .page-state-copy {

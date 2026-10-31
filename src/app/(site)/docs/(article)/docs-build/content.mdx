@@ -14,21 +14,22 @@ subtitle: How are these docs implemented?
 
 ## Docs-Only Build
 
-Our custom `npm run docs` script starts Next with `FLAG_APP=false` so `/beck` is rewritten to a 404 and the CareerChive application is not served. `/` and `/docs` still run.
+My custom `npm run docs` script starts Next with `FLAG_APP=false` so `/beck` is rewritten to a 404 and the installed CareerChive application is not served. 
 
 Defined as a [`package.json`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} script, `npm run docs` calls [`scripts/docs-dev.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/docs-dev.mjs){.blank}, which starts the same `next dev` as `npm run dev`, then sets `FLAG_APP=false` on that process:
 
-- [`src/lib/flags.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/flags.ts){.blank} reads that environment variable as `flags.app`. Default is on.
+- [`src/lib/flags.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/flags.ts){.blank} reads that environment variable as `flags.app`. 
 - [`src/proxy.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/proxy.ts){.blank} rewrites `/beck` while that flag is off.
-- [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} lists `FLAG_APP` under `env` so Next can send it to the browser. Unset stays `true`.
+- [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} lists `FLAG_APP` under `.env.local` so Next can send it to the browser. 
 
+{/* 
 [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} wraps that config with [`withCareerChiveConfig()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/withCareerChiveConfig.ts){.blank} so `/beck` can mount the archive when the flag is on. See [Application Build](/docs/app-build).
 
-In development, [`DocsLivePreviewScript`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsLivePreviewScript.tsx){.blank} polls [`/docs/watch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/watch/route.ts){.blank} and reloads the open docs page when a file under `src/app/(site)/docs`, `src/lib/mdx`, or `src/lib/docs` changes, or when `src/mdx-components.tsx`, `src/app/globals.css`, or `next.config.ts` changes. That route is off outside development. The same config watches `_snippets`, so a snippet edit rebuilds the guide that imports it.
+In development, [`DocsLivePreviewScript`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsLivePreviewScript.tsx){.blank} polls [`/docs/watch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/watch/route.ts){.blank} and reloads the open docs page when a file under `src/app/(site)/docs`, `src/lib/mdx`, or `src/lib/docs` changes, or when `src/mdx-components.tsx`, `src/app/globals.css`, or `next.config.ts` changes. That route is off outside development. The same config watches `_snippets`, so a snippet edit rebuilds the guide that imports it. */}
 
 ## Basics & Custom Theme
 
-Documentation styles live in [`src/app/globals.css`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/globals.css){.blank}, loaded for the whole site. The CareerChive application adds `career-chive/styles.css` and [`src/app/beck/host.css`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/beck/host.css){.blank} only on `/beck`. The docs styles work together with:
+Documentation styles live in [`src/app/globals.css`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/globals.css){.blank}. The docs styles work together with:
 
 ::: {.tabset}
 
@@ -36,8 +37,8 @@ Documentation styles live in [`src/app/globals.css`](https://github.com/beck-cha
 
 [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} registers [`remark-gfm`](https://www.npmjs.com/package/remark-gfm){.blank} (GitHub-flavoured markdown) and the custom [Remark](https://www.npmjs.com/package/remark){.blank} plugin [`remark-docs-syntax.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/mdx/remark-docs-syntax.mjs){.blank}, which allows:
 
-- Defining subtitle and `search: false` within a YAML frontmatter block
-- Using `:::` fences for formatting content
+- Defining subtitle within a YAML frontmatter block.
+- Using `:::` fences for formatting content.
 - Using shortcodes: `{.lock}` ({.lock}) / `{.gear}` ({.gear}) / `{.select}` ({.select}) / `{.insert}` ({.insert}) / `{.update}` ({.update}) / `{.delete}` ({.delete}) / `{.get}` ({.get}) / `{.post}` ({.post}) / `{.put}` ({.put}) / `{.patch}` ({.patch}) / `{.button}` (button link) / `{.blank}` (`target="_blank"`) / `[text]{.smallcaps}` ([small caps]{.smallcaps})
 
 The Remark plugin also pulls page metadata out of the paired `content.mdx` so `page.tsx` can import it:
@@ -46,12 +47,10 @@ The Remark plugin also pulls page metadata out of the paired `content.mdx` so `p
 - `frontmatter` — The YAML defined at the top of the page. `subtitle` is the line under that title.
 - `toc` — `##` / `###` headings, including headings brought in from a snippet. Headings inside a callout or a tabset are left out.
 
-[`DocsToc`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsToc.tsx){.blank} builds the on-page table of contents from those same headings.
-
-`next.config.ts` also registers [Rehype](https://www.npmjs.com/package/rehype){.blank} plugins:
+`next.config.ts` also registers [Rehype](https://www.npmjs.com/package/rehype){.blank} (HTML parsing and serialization) plugins:
 
 - [`rehype-docs-slug.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/mdx/rehype-docs-slug.mjs){.blank} adds `id` to each heading from its text so that anchor links are functional.
-- [`rehype-docs-highlight.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/mdx/rehype-docs-highlight.mjs){.blank} runs [`rehype-highlight`](https://www.npmjs.com/package/rehype-highlight){.blank} with the languages used in the docs: bash, gherkin, javascript, markdown, sql, typescript, xml, and yaml.
+- [`rehype-docs-highlight.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/mdx/rehype-docs-highlight.mjs){.blank} runs [`rehype-highlight`](https://www.npmjs.com/package/rehype-highlight){.blank} (our themed syntax highlighting) with a small language set we use in the docs.
 
 # src/mdx-components.tsx
 
