@@ -1,0 +1,48 @@
+name: Sync docs index
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - "src/app/docs/**/*.mdx"
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # @supabase/supabase-js opens a Realtime client, which needs the
+          # global WebSocket that ships with Node 22+.
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync docs into Supabase
+        env:
+          DOCS_GEMINI_API_KEY: ${{ secrets.DOCS_GEMINI_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          BRANCH: main
+        run: |
+          set -euo pipefail
+          if [ -z "${DOCS_GEMINI_API_KEY:-}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SECRET_KEY:-}" ]; then
+            echo "Missing GitHub secrets DOCS_GEMINI_API_KEY, NEXT_PUBLIC_SUPABASE_URL, and/or SUPABASE_SECRET_KEY"
+            exit 1
+          fi
+          npm run sync-docs

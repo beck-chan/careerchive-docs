@@ -1,0 +1,211 @@
+---
+subtitle: Manage settings and tracked organizations.
+---
+
+# Settings & Organizations
+
+::: {.callout}
+This guide assumes that:
+
+- [x] You've set up the CareerChive application with either [Quickstart](/docs/quickstart) or [Install via npm](/docs/install).
+- [x] You're logged into your instance of the CareerChive application.
+:::
+
+## Configure Settings
+
+Click the **{.gear} (Settings)** in the rightmost corner of the top navigation bar to set your archive's time zone, start date, and the entry auto-generation date, update your user login, or factory reset your application's data.
+
+::: {.tabset}
+
+# Set Archive Time Zone
+
+Set the archive time zone that determines when midnight is for auto-generation of daily entries, as well as displays of time-bound search results and analytics data:
+
+1. Select your desired time zone under **Time Zone**.
+
+2. Click **Update Time Zone**.
+
+# Set Archive Start Date
+
+::: {.callout}
+# Blank by default. 
+
+Your CareerChive application will automatically gate addition and generation of entries from this earliest date floor.
+:::
+
+Select a date from which the archive should allow you to add and generate daily entries for each tracked organization:
+
+1. Select your desired start date under **Archive Start**.
+
+2. Click **Update Start Date**.
+
+# Set Auto-Generation Date
+
+::: {.callout}
+# Blank by default. 
+
+- Set your Archive Start Date first to enable auto-generation of daily entries from this date.
+- Leave blank to disable auto-generation of daily entries.
+- Organizations with `Visbility: Hidden` will not auto-generate entries.
+
+:::
+
+Select a date from which the archive should automatically generate daily entries for each tracked organization based on each organization's Date Active and Generate Days settings:
+
+1. Select your desired start date under **Auto-generation From**.
+
+2. Click **Update Auto-generation Date**.
+
+# Update User Login
+
+::: {.callout}
+# Blank by default. 
+
+You'll need to enable `FLAG_PRIVATE=true` to hide CareerChive behind login.
+
+:::
+
+Update the Username and Password you use to login to your CareerChive application:
+
+1. Under **Username**, enter your desired username.
+
+2. Under **Password**, enter your desired password.
+
+3. Click **Update Login**.
+
+# Factory Reset Data
+
+::: {.callout}
+# Factory resetting will delete all tracked organizations and all daily entries.
+
+Factory reset is irreversible — proceed with caution.
+:::
+
+1. Under **Factory Reset**, click **Reset**.
+
+2. **Enter Password** and type in **Yes, Factory Reset**.
+
+3. Click **Reset** to confirm the reset.
+
+:::
+
+## Manage Organizations
+
+Click **Organizations** in the top navigation bar to view, add, edit, or delete tracked organizations.
+
+::: {.tabset}
+
+# View Organizations
+
+After you've added an organization, you can view its details by clicking on its name in left sidebar.
+
+To sort and filter the list of organizations:
+
+- Select an option from the **Sort** drop-down menu to sort the list by activation date or by name alphabetically.
+- Select an option from the **Status** drop-down menu to filter the list by active or inactive organizations.
+- Click **show hidden** to display organizations that have hidden visibility.
+
+# Add Organizations
+
+To add a new organization:
+
+1. Click **+ Add Organization** and the organization's details, such as:
+
+    - **Name** (Required) — Organization's name.
+    - **Generate Days** — Days of the week entries should be automatically generated for.
+    - **Date Active** (Required) — Date the organization became active.
+    - **Date Inactive** — Date the organization became inactive.
+    - **Visibility** — Organization's visibility in the left sidebars by default. Hiding an organization will also prevent entries from being automatically generated for it.
+
+4. Click **Save**.
+
+# Edit Organizations
+
+After you've added an organization, you can edit its details by clicking on its name in left sidebar:
+
+1. Click **Edit** to update the organization's details, such as:
+
+    - **Name** (Required) — Organization's name.
+    - **Generate Days** — Days of the week entries should be automatically generated for.
+    - **Date Active** (Required) — Date the organization became active.
+    - **Date Inactive** — Date the organization became inactive.
+    - **Visibility** — Organization's visibility in the left sidebars by default. Hiding an organization will also prevent entries from being automatically generated for it.
+
+2. To apply your changes, click **Save**.
+
+# Delete Organizations
+
+::: {.callout}
+# Deleting an organization is irreversible.
+
+Proceed with caution.
+:::
+
+If you've added an organization without any daily entries, you can delete it by clicking on its name in left sidebar:
+
+1. Click **Delete**.
+
+2. To confirm the deletion, **Enter Password** and click **Delete**.
+
+    If no password is set, leave the **Enter Password** field blank.
+
+3. Click **Delete**.
+
+:::
+
+### Manage Data & Entries
+
+Under **Bulk Management**, you can clear entered data or day entries for an organization from a range of specified dates:
+
+::: {.tabset}
+
+# Clear Data
+
+::: {.callout}
+# Clearing data will remove all data for those days, including work completed, citations, notes, and comments.
+
+Clearing data is irreversible — proceed with caution.
+:::
+
+To clear entered data on daily logs for an organization within a specified date range:
+
+1. Under **Clear Data For**, configure the date range you want to clear data for.
+
+2. Click **Clear**.
+
+3. **Enter Password**, then click **Clear** to confirm removal of all data for that organization within the specified date range.
+
+To clear all entered data on daily logs for an organization:
+
+1. Under **Clear Data For**, configure the date range you want to clear data for.
+
+2. Click **Clear All**.
+
+3. **Enter Password**, then click **Clear All** to confirm removal of all data for that organization.
+
+# Delete Days
+
+::: {.callout}
+# Deleting logs will remove all data for those days, including the logs themselves.
+
+Data is irrecoverable, but you can always recreate the log by backfilling if needed — proceed with caution.
+:::
+
+
+To delete day entries for an organization within a specified date range:
+
+1. Under **Delete Days For**, configure the date range you want to delete entries for.
+
+2. Click **Delete Days**.
+
+3. **Enter Password**, then click **Delete Days** to confirm removal of all entries for that organization within the specified date range.
+
+To delete all days for an organization:
+
+1. Under **Delete Days For**, configure the date range you want to delete entries for.
+
+2. Click **Delete All**.
+
+3. **Enter Password**, then click **Delete All** to confirm removal of all entries for that organization.
+
+:::

@@ -1,0 +1,190 @@
+---
+subtitle: Examples on this page will render with the proper styling within documentation.
+search: false
+---
+
+import Example from "../_snippets/example.mdx"
+
+# Docs Reference
+
+To render only the documentation for previewing:
+
+```bash
+npm run docs
+```
+
+::: {.callout}
+# To create a new documentation page, copy an existing `page.tsx` next to a `content.mdx` into a directory named for the page URL slug under `src/app/docs/(article)/`.
+
+Navigation with specific defined sections linked to the main documentation landing page is defined in `src/app/docs/_nav/docs-nav-data.ts`.
+:::
+
+## YAML Frontmatter
+
+```yaml
+---
+subtitle: Set an optional subtitle
+search: false # Hide page from docs search
+
+# h1 sets the page title and browser tab
+---
+```
+
+## Single-Sourcing
+
+Shared prose lives in `_snippets/`. Import a snippet to use it on a page:
+
+```markdown
+import Example from "../_snippets/example.mdx"
+
+<Example />
+```
+
+::: {.callout}
+<Example />
+:::
+
+Leave YAML and `# h1` on the host page. Snippet `##` / `###` headings are included in the host table of contents automatically, in the order the snippet appears on the page.
+
+## Content
+
+### Headings
+
+The table of contents is built from `##` and `###` headings.
+
+### Callouts
+
+::: {.callout}
+
+# A `#` heading inside a callout is styled like `###` and does not appear in the table of contents.
+
+Use a `::: {.callout} :::` for a note that should sit apart from the main text. Indent the fence under a list item to nest the callout in that step.
+
+:::
+
+### Text & Links
+
+::: {.columns}
+
+::: {.80}
+You can write **bold** and *italic* in the same sentence as the surrounding copy, and add [links](/docs){.blank} as usual.
+
+Append `{.button}` to a markdown link for a bordered button. Append `{.blank}` to open a link in a new tab.
+
+Drop `{.lock}` or `{.gear}` anywhere in prose: {.lock} / {.gear}.
+
+:::
+
+::: {.20}
+[Button](/docs){.button}
+
+:::
+
+:::
+
+### List Items
+
+
+::: {.columns}
+
+::: {.33}
+- one
+- two
+
+:::
+
+::: {.33}
+- [x] checked items
+- [ ] unchecked items
+
+:::
+
+::: {.33}
+1. first
+2. second
+
+:::
+
+:::
+
+### Code
+
+::: {.columns}
+
+::: {.70}
+
+Highlighting works for `yaml`, `bash`, `typescript`, and `markdown`.
+
+```typescript
+export const title: string = "CareerChive";
+```
+
+:::
+
+::: {.30}
+```bash
+# install dependencies
+npm install
+npm run dev
+```
+
+:::
+
+
+:::
+
+## Layouts
+
+### Tabsets
+
+::: {tabset}
+
+# one
+
+`::: {tabset} :::` splits on `# h1` headings. Those headings become tab labels, not page titles.
+
+# two
+
+A `#` heading inside a nested callout stays in the callout.
+
+::: {.callout}
+# Callout title
+
+This is not a third tab.
+:::
+
+:::
+
+### Columns
+
+` ::: {.columns} :::` have gaps between them by default, and no margin or padding on the sides:
+
+::: {.columns}
+
+::: {.25}
+A 25/75 mobile-responsive flexbox column example.
+:::
+
+::: {.75}
+To add spacing on the top-level fence:
+
+```markdown
+::: {.columns .pa2 .ma2}
+::: {.columns .pl2 .mt2}
+```
+
+:::
+
+:::
+
+### Tables
+
+Pipe tables use a header row, a `| --- |` separator, and body rows:
+
+| Data | Who | Purpose |
+| --- | --- | --- |
+| Organization name and date range | Anyone with the archive | Group daily entries |
+| Daily attendance, work, notes, and ratings | The person logging | Track that day's record |
+| Search queries and ChiveBot summaries | The person searching | Find and recap logged days |
+
+Align a column with `:---` (left), `:---:` (center), or `---:` (right) in the separator row.

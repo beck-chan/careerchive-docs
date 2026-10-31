@@ -1,0 +1,208 @@
+::: {.callout}
+# Docs are compiled by [`@next/mdx`](https://www.npmjs.com/package/@next/mdx){.blank}.  
+
+- Each documentation guide is a [`page.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/example/page.tsx){.blank} that imports [`./content.mdx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/example/content.mdx){.blank} (the actual markdown content), wrapped in [`DocsPage`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsPage.tsx){.blank} which also renders the sticky-note table of contents automatically from page headings.
+- [`src/app/docs/layout.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/layout.tsx){.blank} defines the custom layout, side navigation, and docs-only theme. 
+- [`DocsNav`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_nav/DocsNav.tsx){.blank} builds the sidebar navigation from [`docs-nav-data.ts`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_nav/docs-nav-data.ts){.blank}.
+:::
+
+## Docs-Only Build
+
+Our custom `npm run docs` script starts Next with `FLAG_DOCSONLY=true` so the root `/` redirects into `/docs` and we don't render the guestbook application.
+
+Defined as a [`package.json`](https://github.com/beck-chan/guestbook/blob/main/package.json){.blank} script, `npm run docs` calls [`scripts/docs-dev.mjs`](https://github.com/beck-chan/guestbook/blob/main/scripts/docs-dev.mjs){.blank}, which starts the same `next dev` as `npm run dev`, then sets `FLAG_DOCSONLY=true` on that process:
+
+- [`src/lib/flags.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/flags.ts){.blank} reads that environment variable as `flags.docsOnly`. 
+- [`next.config.ts`](https://github.com/beck-chan/guestbook/blob/main/next.config.ts){.blank} also lists `FLAG_DOCSONLY` under `.env.local` so Next can send it to the browser.
+
+## Basics & Custom Theme
+
+Documentation has its own custom theme, separate from the guestbook defined in  [`src/app/docs/docs.css`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/docs.css){.blank}. The custom theme works together with:
+
+::: {.tabset}
+
+# next.config.ts
+
+[`next.config.ts`](https://github.com/beck-chan/guestbook/blob/main/next.config.ts){.blank} registers [`remark-gfm`](https://www.npmjs.com/package/remark-gfm){.blank} (GitHub-flavoured markdown) and my custom [Remark](https://www.npmjs.com/package/remark){.blank} (Markdown parsing and serialization) plugin, which allows:
+
+- Defining subtitle and flag visibility within a YAML frontmatter block
+- Using `:::` fences for formatting content 
+- Using shortcodes: `{.heart}` ({.heart}) / `{.lock}` ({.lock}) / `{.gear}` ({.gear}) / `{.select}` ({.select}) / `{.insert}` ({.insert}) / `{.update}` ({.update}) / `{.delete}` ({.delete}) / `{.get}` ({.get}) / `{.post}` ({.post}) / `{.put}` ({.put}) / `{.patch}` ({.patch}) / `{.button}` (button link) / `{.blank}` (`target="_blank"`) / `[text]{.smallcaps}` ([small caps]{.smallcaps}) 
+
+
+The Remark plugin also pulls page metadata out of the paired `content.mdx` so `page.tsx` can import it:
+
+- `title` — The `#` heading, which informs the browser tab
+- `toc` — `##` / `###` headings, used for the sticky-note table of contents and anchor links
+- `frontmatter` — The YAML defined at the top of the page
+
+`next.config.ts` also registers [Rehype](https://www.npmjs.com/package/rehype){.blank} (HTML parsing and serialization) plugins:
+
+- [`rehype-slug`](https://www.npmjs.com/package/rehype-slug){.blank} adds `id` to each heading from its text so that anchor links are functional.
+- My custom plugin runs [`rehype-highlight`](https://www.npmjs.com/package/rehype-highlight){.blank} (our themed syntax highlighting) with a small language set we use in the docs.
+
+# src/mdx-components.tsx
+
+[`src/mdx-components.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/mdx-components.tsx){.blank} runs last at render, swapping native MDX tags for custom styled ones, and registering my fence components so that they display correctly:
+
+- `h1` / `h2` / `h3` become `.docs-title` / `.docs-heading` / `.docs-subheading`
+- `pre` becomes `DocsCodeBlock`
+- `table` gets `.docs-table`
+- `li` gets the heart list item icon (or `DocsTaskItem` for `- [x]`, which are interactive!! checkboxes)
+- `DocsCallout` becomes a callout box
+- `DocsColumns` becomes mobile-responsive columns 
+- `DocsTabset` becomes mobile-responsive tabbed or drop-down section
+
+:::
+
+## Documentation Pages
+
+### Landing Page
+
+The main documentation landing page (`/docs`) lives at [`src/app/docs/page.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/page.tsx){.blank}, and is built by React, not MDX and  hides the sidebar navigation:
+
+- A `.docs-index` wrapper is what switches the layout from a guide to a landing.
+- Displayed subtitle is wrapped into a feature flag ([`src/lib/flags.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/flags.ts){.blank}) defined in `docsIndexSubtitle`, rendering different text depending on the `FLAG_PUBLIC` value at build time.
+
+This landing page:
+
+- Reads `DOCS_NAV_SECTIONS` from [`_nav/docs-nav-data.ts`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_nav/docs-nav-data.ts){.blank} (sidebar navigation).
+- Keeps `Installation` / `Guides` / `Reference` sections under tilted sticky notes, defined by `LANDING_TITLES`.
+- Turns `Etc.` / `Support` into footer buttons.
+
+### Content Pages
+
+Since every guide in documentation is wrapped in [`src/app/docs/layout.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/layout.tsx){.blank}, the per-page [`page.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/example/page.tsx){.blank} defines the rest.
+
+::: {.tabset}
+
+# Guide Pages
+
+Articles feature a sidebar inspired by the poetry book pages, and a sticky-note table of contents, courtesy of [`DocsPage`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsPage.tsx){.blank}.
+
+# API Library
+
+The API Library (`/docs/api`) widens the sidebar and replaces the default links with anchors to calls, with no table of contents by skipping import of `DocsPage` on purpose, instead importing [`DocsApiReference`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsApiReference.tsx){.blank}.
+
+:::
+
+## API Library
+
+The API Library is a hybrid page ([`src/app/docs/api/page.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/api/page.tsx){.blank}) — it first renders content from [`content.mdx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/api/content.mdx){.blank}, then [`DocsApiReference`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsApiReference.tsx){.blank} embeds my customized [Scalar API](https://scalar.com/){.blank} explorer underneath.
+
+The API explorer catalogs operations from a live PostgREST OpenAPI document. [`loadDatabaseOpenApi.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/loadDatabaseOpenApi.ts){.blank} fetches `{project}/rest/v1/` with the `service_role` key so admin tables and RPCs still appear. `FLAG_PUBLIC` picks which project to introspect:
+
+- `FLAG_PUBLIC=false` — `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` (my custom install)
+- `FLAG_PUBLIC=true` — `API_PUBLIC_URL`, `API_SERVICE_ROLE_KEY`, and `API_ANON_KEY` so that public project is fully specified (example database for the packaged guestbook)
+
+::: {.callout}
+The Test Request feature available on the public build allows visitors to enter their own Supabase project ID to test requests against — it does not call my example database.
+
+:::
+
+### Live OpenAPI
+
+::: {.tabset}
+
+# loadDatabaseOpenApi.ts
+
+[`loadDatabaseOpenApi.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/loadDatabaseOpenApi.ts){.blank}:
+
+- Caches the fetch (React `cache()` plus a 60-second revalidate) so the API Library sidebar and the Scalar API explorer share one request on `/docs/api`. Guides do not fetch OpenAPI. 
+- After fetch it stamps our `info` title/description, `apikey` / `bearerAuth` security, and `servers` overlay.
+- Overlays required PostgREST row filters on {.patch} / {.delete} (replacing the matching `$ref`) so **Test Request** does not list the same query parameter twice.
+- [`typesToOpenApi.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/typesToOpenApi.ts){.blank} still builds sidebar links from Scalar inline call anchors (`openApiNav`) and marks non-anon operations as requiring a JWT.
+
+# layout.tsx
+
+[`layout.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/layout.tsx){.blank}:
+
+- Shared docs chrome only (sidenav + search provider). It does not fetch OpenAPI.
+- On `/docs/api`, [`DocsApiReference`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsApiReference.tsx){.blank} hydrates [`DocsApiNav`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_nav/DocsApiNav.tsx){.blank} from the live spec. Until that lands, the sidebar shows a same-height **Loading API catalog** placeholder. [`DocsSidenav`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_nav/DocsSidenav.tsx){.blank} still swaps the usual docs nav for those API anchors.
+
+:::
+
+
+### Scalar API Explorer
+
+::: {.tabset}
+
+# `DocsApiReferenceView`
+
+[`DocsApiReferenceView`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsApiReferenceView.tsx){.blank}:
+
+- Loads the [`@scalar/api-reference`](https://www.npmjs.com/package/@scalar/api-reference){.blank} browser bundle from [`/docs/api/scalar-standalone`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/api/scalar-standalone/route.ts){.blank} and renders it after the content in `src/app/docs/api/content.mdx`, which also displays differently depending on the build.
+- [`page.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/api/page.tsx){.blank} preloads that script so the download overlaps the article render, and streams a **Loading API reference** skeleton behind `Suspense` until the spec is ready. On the public build, the view waits until the stored project ref is read from `sessionStorage` before mounting Scalar.
+- Enables the **Enter Your Supabase Project ID** field above the explorer, pointing test requests at the visitor's entered project on the public build.
+
+# `scalarConfig.ts`
+
+[`scalarConfig.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/scalarConfig.ts){.blank}:
+
+- Turns Scalar's own theme off and injects my `customCss` that remaps Scalar onto guestbook tokens instead. 
+- Hides Scalar's native sidebar and sticky search bar, instead, the sidebar search opens Scalar's search.
+- Hides the Models section (`hideModels`).
+- Starts with every tag collapsed (`defaultOpenAllTags` / `defaultOpenFirstTag` off). The API sidenav matches: section headings show a caret and stay collapsed until you open that heading or the matching explorer tag. Click a sidebar operation to jump to that call.
+- Hides the **Test Request** functionality unless `FLAG_PUBLIC` (public build) or `FLAG_APITEST` (custom build, for my internal testing) flags are on.
+- With [`scalarApiKey.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/scalarApiKey.ts){.blank}, injects the saved anon `apikey` and admin JWT on Send so focusing one Authentication tab does not drop the other.
+
+
+:::
+
+## Search & LLM Ingestion
+
+::: {.callout}
+# [`composeDocsCorpus`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/compose.ts){.blank} reads each `content.mdx` page under `src/app/docs`, inserts shared `_snippets`, and follows the same `public: false` and public/private fence rules as the rendered documentation. 
+
+- Humans search that copy with the User Guide Search or API Library Search. 
+- Large language models (LLMs) find it through [`/llms.txt`](/llms.txt){.blank} and `/docs/<slug>.md`. 
+
+Nothing is hand-maintained for search or LLM catalogs. On each deploy, compose re-reads `.mdx` pages for that build's flags when `/docs/search-index`, `/llms.txt`, or `/docs/<slug>.md` are built — not on every documentation page render.
+:::
+
+::: {.tabset}
+
+# User Guide Search 
+
+For every documentation page except API Library (`/docs/api`), **Search Docs** opens the shared overlay powered by [`DocsSearch.tsx`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsSearch.tsx){.blank}:
+
+- [`DocsSearchProvider`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsSearch.tsx){.blank} loads [`/docs/search-index`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/search-index/route.ts){.blank} the first time Search Docs or the landing search bar opens (not on `/docs/api`, which uses Scalar search). Until the index arrives the overlay shows **Indexing…**. 
+- [`searchTerms.ts`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/searchTerms.ts){.blank} expands light English inflections at index and query time (`managing` ↔ `manage`), with prefix match and a bit of fuzzy room on longer terms.
+
+**What Gets Indexed**
+
+- Host pages only (`**/content.mdx`); `_snippets` are never rendered or indexed independently
+- Snippet imports are inlined into the host before flattening headings/body
+- When `FLAG_PUBLIC=true`, pages with `public: false` are omitted (anything under "Internal" in the sidebar)
+- `{.public}` / `{.private}` fences and `*-public` embed pairs resolve through the live Remark plugin so public deploys never index private-only copy
+- OpenAPI / Scalar operations are not returned in the user guide search — only other docs `.mdx` files (including `/docs/api` prose from `api/content.mdx` when it is searchable)
+
+# API Library Search
+
+On the API Library page (`/docs/api`), [`DocsSidenav`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_nav/DocsSidenav.tsx){.blank} labels the control **Search API** and calls Scalar's native search modal via [`openScalarSearch()`](https://github.com/beck-chan/guestbook/blob/main/src/app/docs/_components/DocsSearch.tsx){.blank} instead of the user guide search.
+
+# LLM Ingestion
+
+Agents follow **discover → fetch → cite** against the same composed guides the user guide search.
+
+**`/llms.txt`**
+
+[`src/app/llms.txt/route.ts`](https://github.com/beck-chan/guestbook/blob/main/src/app/llms.txt/route.ts){.blank} serves a plain-text catalog from [`buildLlmsTxt()`](https://github.com/beck-chan/guestbook/blob/main/src/lib/docs/llmIngestion.ts){.blank}:
+
+- One line per indexed guide with HTML and `.md` links
+- Grouped by nav section when available
+- A short API pointer to `/docs/api` (Scalar) — no OpenAPI schema dump
+- Same opt-outs as the user guide search (`public: false` under `FLAG_PUBLIC`)
+
+**`/docs/<slug>.md`**
+
+[`next.config.ts`](https://github.com/beck-chan/guestbook/blob/main/next.config.ts){.blank} rewrites `/docs/:path*.md` to the handler under [`src/app/docs/raw/`](https://github.com/beck-chan/guestbook/tree/main/src/app/docs/raw){.blank}:
+
+- Each response is the composed markdown for that host (`#` title, sections, inlined snippets). Unknown or opted-out slugs return `404`. 
+- There are no mirrors of individual Scalar operations.
+
+:::
+
+## Accessibility
+
+Along with checking pages with [Chrome's Lighthouse accessibility audit](https://developer.chrome.com/docs/accessibility), as part of pull request checks, [a11y lint](https://github.com/beck-chan/guestbook/blob/main/.github/workflows/lint-a11y-docs-check.yaml){.blank} runs a spot check on all documentation pages to ensure they are somewhat accessible and any errors discovered are patched before deployment.

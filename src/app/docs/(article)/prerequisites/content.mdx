@@ -1,0 +1,270 @@
+---
+subtitle: Required to hook everything up.
+---
+
+# Prerequisites
+
+Installing the application ships the CareerChive user interface and default Supabase wiring.
+
+You'll need to first:
+
+- [ ] Install Node.js.
+- [ ] Configure a Supabase project. 
+- [ ] Hook up Google OAuth 2.0 to enable admin. // Change to Cloudflare later
+
+::: {.callout}
+This guide assumes:
+
+- [x] You're familiar with using your development terminal and the command line interface (CLI).
+- [x] You already have a GitHub account and know your way around.
+- [x] (Optional) You already have a way to deploy your application. These docs cover using Vercel.
+:::
+
+## Install Node.js with npm
+
+::: {.tabset}
+
+# Windows
+
+Download the **22 LTS** Windows installer from [nodejs.org](https://nodejs.org){.blank}. The installer includes `npm`.
+
+Or, install [fnm](https://github.com/Schniz/fnm/releases){.blank} (`fnm-windows.zip`), then call:
+
+
+```bash
+fnm install 22
+fnm use 22
+```
+
+Confirm that you have the right versions:
+
+```bash
+# Should return v22.23.2
+node -v
+# Should return 10.9.8
+npm -v
+```
+
+    ::: {.callout}
+    The Unix `nvm` installer does **not** work in Windows. Use fnm, [nvm-windows](https://github.com/coreybutler/nvm-windows){.blank}, or Node inside Windows Subsystem for Linux (WSL).
+    :::
+
+# macOS
+
+Download the **22 LTS** macOS installer from [nodejs.org](https://nodejs.org){.blank}. The installer includes `npm`.
+
+Or install [nvm](https://github.com/nvm-sh/nvm){.blank}, restart the terminal, then call:
+
+```bash
+nvm install 22
+nvm use 22
+```
+
+Confirm that you have the right versions:
+
+```bash
+# Should return v22.23.2
+node -v
+# Should return 10.9.8
+npm -v
+```
+
+:::
+
+::: {.callout}
+# Do not use odd-numbered or current releases.
+
+Use **Node.js 22 LTS** or **24 LTS** (either includes `npm`). Next.js `16` needs Node.js `20.9`+. 
+:::
+
+## Create Supabase Project
+
+::: {.tabset}
+
+# 1. Create Project
+
+Create an account and organization with [Supabase](https://supabase.com/), then on the Create a new project screen:
+
+a. Enter in your **Organization**, **Project name**, and **Database password**.
+
+b. Select a **Region**.
+
+c. Under Security, check off:
+
+    - **Enable Data API**
+    - **Enable automatic RLS**
+
+    ::: {.callout}
+    Toggle **Automatically expose new tables** to *unchecked*.
+
+    :::
+
+d. Click **Create new project**.
+
+# 2. Retrieve API Keys
+
+When your project is ready:
+
+a. In the left sidebar, click **Project Settings**, then select **API Keys**.
+
+b. Under Publishable and secret API keys, copy the **Publishable key** to your clipboard. 
+
+    Hang on to this — we'll need to enter this into your `.env.local` file under your `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`:
+
+    ```bash
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_<your-publishable-key>
+    ```
+
+c. Under Publishable and secret API keys, copy the **Secret key** to your clipboard. 
+
+    Hang on to this — we'll need to enter this into your `.env.local` file under your `SUPABASE_SECRET_KEY`:
+
+    ```bash
+    SUPABASE_SECRET_KEY=sb_secret_<your-secret-key>
+    ```
+
+# 3. Retrieve Supabase URL
+
+a. In the Settings left sidebar, select **Data API**.
+
+b. Under Overview, copy the **API URL** to your clipboard. You'll need to clip the `rest/v1/` portion from the end of the URL.
+
+    Hang on to this — we'll need to enter this into your `.env.local` file and to hook up Supabase:
+
+    ```bash
+    NEXT_PUBLIC_SUPABASE_URL=https://<your-database-url>.supabase.co
+    ```
+
+:::
+
+### Enable Cron Jobs
+
+1. In the left sidebar, click **Database**, then select **Extensions**.
+
+2. In **Search for an extension**, enter `pg_cron`.
+
+3. Under the **Enabled** column, toggle the `pg_cron` extension to the ON position.
+
+4. On the confirmation popup, select **Enable**.
+
+## Create Cloudflare R2 Project
+
+::: {.tabset}
+
+# 1. Activate R2
+
+If you do not already have a Cloudflare account with R2 activated, create an account with [Cloudflare](https://cloudflare.com/), then in the dashboard:
+
+a. In the left sidebar, click **Storage & databases**, then select **R2 Object Storage**.
+
+b. Click **Add R2 subscription to my account**.
+
+    ::: {.callout}
+    # Activation of R2 is free.
+
+    You will only be charged for any overage in your usage. Learn more at [Cloudflare Docs: Pricing](https://developers.cloudflare.com/r2/pricing/#free-tier){.blank}.
+    :::
+
+c. Enter your billing information and click **Activate R2**.
+
+d. Click **Continue to R2**.
+
+# 2. Retrieve Account ID
+
+a. In the left sidebar, click **Storage & databases**, then select **R2 Object Storage**.
+
+b. Under Account Details, copy the **Account ID** to your clipboard.
+
+    Hang on to this — we'll need to enter this into your `.env.local` file under your `CLOUDFLARE_ACCOUNT_ID`:
+
+    ```bash
+    CLOUDFLARE_ACCOUNT_ID=<your-account-id>
+    ```
+
+c. Construct `R2_ENDPOINT` from that same Account ID:
+
+    ```bash
+    R2_ENDPOINT=https://<your-account-id>.r2.cloudflarestorage.com
+    ```
+
+# 3. Create Bucket
+
+Under **R2 Object Storage**:
+
+a. Click **Create bucket**.
+
+b. Enter a **Bucket name**.
+
+    Hang on to this — we'll need to enter this into your `.env.local` file under your `R2_BUCKET`:
+
+    ```bash
+    R2_BUCKET=<your-bucket-name>
+    ```
+
+c. Select a **Location**.
+
+d. Under **Default Storage Class**, select **Standard**.
+
+e. Click **Create bucket**.
+
+# 4. Create API Token
+
+a. In the left sidebar, click **Storage & databases**, then select **R2 Object Storage**.
+
+b. Under Account Details, click **Manage API Tokens**.
+
+c. Select **Create User API token**:
+
+    - Enter the **Token name**.
+    - Under Permissions, select **Object Read & Write**.
+    - Under Specify bucket(s), select **Apply to specific buckets only**, then choose the bucket you just created.
+
+d. Click **Create API Token**.
+
+e. Copy the **Access Key ID** to your clipboard.
+
+    Hang on to this — we'll need to enter this into your `.env.local` file under your `R2_ACCESS_KEY_ID`:
+
+    ```bash
+    R2_ACCESS_KEY_ID=<your-access-key-id>
+    ```
+
+f. Copy the **Secret Access Key** to your clipboard.
+
+    Hang on to this — we'll need to enter this into your `.env.local` file under your `R2_SECRET_ACCESS_KEY`:
+
+    ```bash
+    R2_SECRET_ACCESS_KEY=<your-secret-access-key>
+    ```
+
+    ::: {.callout}
+    You will not be able to view the **Secret Access Key** again after this step.
+    :::
+
+g. Click **Finish**.
+
+:::
+
+## What's Next
+
+::: {.columns}
+
+::: {.50}
+
+Fork the starter repository or drop the CareerChive kit into your existing Next.js app:
+
+:::
+
+::: {.25}
+
+[Quickstart](/docs/quickstart){.button}
+
+:::
+
+::: {.25}
+
+[Install with npm](/docs/install){.button}
+
+:::
+
+:::

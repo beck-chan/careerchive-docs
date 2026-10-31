@@ -1,0 +1,128 @@
+---
+subtitle: Enable ChiveBot to assist you with searches.
+---
+
+# Enable CareerChive Chatbot
+
+::: {.callout}
+This guide assumes that:
+
+- [x] You've set up the CareerChive application with either [Quickstart](/docs/quickstart) or [Install via npm](/docs/install).
+- [x] You already have a Google account.
+:::
+
+## Retrieve Gemini API Key
+
+### Generate Gemini API Key
+
+1. Open the [Gemini API Studio](https://aistudio.google.com/){.blank} console.
+
+2. In the left sidebar, click **Dashboard** under Manage.
+
+3. Click **Create API key**.
+
+4. **Name your key**, and **Choose an imported project** (`Default Gemini Project` is fine).
+
+5. Click **Create key**.
+
+6. Click **Copy key** to copy the API key to your clipboard.
+
+### Update Gemini API Key
+
+::: {.tabset}
+
+# Local Environment
+
+Enter the copied key into your `.env.local` file:
+
+    ```bash
+    GEMINI_API_KEY=<your-copied-key>
+    ``` 
+
+# Vercel Environment
+
+::: {.callout}
+Only required if you are deploying your built application to Vercel.
+:::
+
+From your [Vercel](https://vercel.com/){.blank} dashboard, click **Environment Variables** to enter the key into the [variables](https://vercel.com/docs/environment-variables){.blank} for your project:
+
+    ```bash
+    GEMINI_API_KEY=<your-copied-key>
+    ```
+:::
+
+
+## Enable ChiveBot
+
+
+### Create ChiveBot Tables in Supabase
+
+1. Copy the contents of [`chivebot-schema.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot-schema.sql){.blank} to your clipboard.
+
+2. Within Supabase, select **SQL Editor** from the left sidebar, then paste in the contents of `chivebot-schema.sql`.
+
+3. Click **Run** to execute the schema.
+
+4. If you receive a Potential issue detected popup, click **Run query** to execute the schema. 
+
+::: {.callout}
+Confirm that you get `Success. No rows returned` under the Results before moving on to the next step.
+:::
+
+### Toggle ChiveBot Flag
+
+
+::: {.tabset}
+
+# Local Environment
+
+Enter `true` into your `.env.local` file for the `FLAG_CHIVEBOT` variable:
+
+    ```bash
+    FLAG_CHIVEBOT=true
+    ```
+
+# Vercel Environment
+
+::: {.callout}
+Only required if you are deploying your built application to Vercel.
+:::
+
+From your [Vercel](https://vercel.com/){.blank} dashboard, click **Environment Variables** to enter the following [variable](https://vercel.com/docs/environment-variables){.blank} for your project:
+
+    ```bash
+    FLAG_CHIVEBOT=true
+    ```
+
+    Your next `npm run dev` or build will now include the ChiveBot functionality.
+
+:::
+
+
+## What's Next
+
+::: {.columns}
+
+::: {.50}
+
+Configure your settings and organizations and learn how to use the ChiveBot:
+
+:::
+
+::: {.25}
+
+[Settings & Organizations](/docs/settings){.button}
+
+:::
+
+::: {.25}
+
+[Use Search](/docs/search){.button}
+
+:::
+
+:::
+
+
+

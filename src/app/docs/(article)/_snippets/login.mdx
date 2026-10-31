@@ -1,0 +1,48 @@
+# 2. Set Up Your Login
+
+::: {.callout}
+# It's recommended you set up a login to protect your application from unauthorized access, as anyone who can access your install of CareerChive can spam your Supabase database or perform irreversible destructive actions.
+
+If you're only going to be using your application locally in a secure personal environment, or installing the package in within a application with its own access logic, you can choose to skip this step. 
+
+- There are no checks for validity of the login credentials.
+- Credentials are saved in your `settings` table in Supabase.
+- You are responsible for configuring secure credentials for your application.
+- You can use a free generator like [Bitwarden](https://bitwarden.com/password-generator/){.blank} to generate secure credentials.
+
+:::
+
+
+a. Generate a random 32-byte hex value and copy this generated value to your clipboard by calling the following command in your terminal:
+
+    ```bash
+    openssl rand -hex 32
+    ```
+
+b. Enter these values into your `.env.local` file:
+
+    ```bash
+    FLAG_PRIVATE=true
+    
+    SESSION_SECRET=<your-generated-value>
+    ``` 
+
+c. Generate your login credentials by running the following command in your terminal:
+
+    ```bash
+    npx career-chive login
+    ```
+
+d. Copy the contents of the generated `scripts/login.sql` file to your clipboard.
+
+e. Within Supabase, select **SQL Editor** from the left sidebar, then paste in the contents of `login.sql`.
+
+f. Click **Run** to execute the schema.
+
+g. If you receive a Potential issue detected popup, click **Run query** to execute the schema. 
+
+::: {.callout}
+# Confirm that you get `Success. No rows returned` under the Results before moving on to the next step.
+
+If working out of a GitHub repository, make sure to include `login.sql` in your `.gitignore` to prevent it from being committed as it contains your login credentials.
+:::

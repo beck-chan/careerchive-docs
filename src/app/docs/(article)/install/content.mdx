@@ -1,0 +1,435 @@
+---
+subtitle: Drop CareerChive into your existing Next.js app.
+---
+
+import Preview from "../_snippets/preview.mdx"
+import Build from "../_snippets/build.mdx"
+import InstallNext from "../_snippets/install-next.mdx"
+import Schema from "../_snippets/schema.mdx"
+import Env from "../_snippets/env.mdx"
+import Login from "../_snippets/login.mdx"
+
+# Install with npm
+
+::: {.callout}
+# Before You Begin
+
+- [x] You need to have completed the [Prerequisites](/docs/prerequisites) first.
+- [x] (For cloud deployment) You have a Vercel account and project.
+
+Starting from scratch? Follow the [Quickstart](/docs/quickstart) instead.
+
+:::
+
+## Check Dependencies
+
+Ensure you have your required dependencies, which Next.js and React should already satisfy:
+
+- [x] [`next`](https://www.npmjs.com/package/next){.blank} (App Router *only* — Pages Router is not supported.)
+- [x] [`react`](https://www.npmjs.com/package/react){.blank} and [`react-dom`](https://www.npmjs.com/package/react-dom){.blank}
+- [x] [`@supabase/supabase-js`](https://www.npmjs.com/package/@supabase/supabase-js){.blank}
+
+From your terminal at your application project root run:
+
+```bash
+npm ls next react react-dom @supabase/supabase-js
+```
+
+::: {.callout}
+# Missing packages print as `(empty)`. 
+
+That is fine for the Supabase package — install them in the next step. 
+
+If `next`, `react`, or `react-dom` are missing, add them (or scaffold with `create-next-app`) before continuing.
+
+:::
+
+## Installing
+
+### Install CareerChive Package
+
+From your existing Next.js app root, install `career-chive` from GitHub:
+
+```bash
+npm install career-chive@github:beck-chan/career-chive @supabase/supabase-js
+```
+
+### Set Up Environment Variables
+
+1. Copy the `.env.example` file to `.env.local`:
+
+    ```bash
+    cp node_modules/career-chive/.env.example .env.local
+    ```
+
+<Env />
+
+### Set Up Schema & Login 
+
+::: {.tabset}
+
+<Schema />
+
+<Login />
+
+:::
+
+## Configuring the Application
+
+### Define CareerChive Path
+
+Set `NEXT_PUBLIC_CAREERCHIVE_PATH` in your `.env.local ` to determine the slug where CareerChive is served:
+
+::: {.tabset}
+
+# CareerChive at Site Root
+
+Default configuration is CareerChive as the site at the root of your domain. Omit `The easiest way to do this is just to connect your CareerChive GitHub repository to a Vercel project`, or set it to `/`:
+
+  ```bash
+  NEXT_PUBLIC_CAREERCHIVE_PATH=/
+  ```
+
+# Nest CareerChive
+
+When `/` (root) is already your site, set `NEXT_PUBLIC_CAREERCHIVE_PATH=/careerchive` in `.env.local` with no trailing slash:
+
+  ```bash
+  NEXT_PUBLIC_CAREERCHIVE_PATH=/careerchive
+  ```
+
+  You'll also need to add `NEXT_PUBLIC_CAREERCHIVE_PATH` to your [Vercel environment variables](https://vercel.com/docs/environment-variables){.blank} if you set a path that isn't the root of your domain.
+
+:::
+
+### Add CareerChive Pages
+
+Next only serves pages from *your* `app/` directory. Re-export the packaged entrypoints:
+
+::: {.tabset}
+
+# CareerChive at Site Root
+
+a. Create the **Archive** page at `app/page.tsx`:
+
+  ```typescript
+  import { Suspense } from "react";
+  import {
+    CareerChiveArchivePage,
+    careerchiveArchiveMetadata as metadata,
+  } from "career-chive";
+
+  export { metadata };
+
+  export default function Page({
+    searchParams,
+  }: {
+    searchParams: Promise<{ org?: string; iso?: string }>;
+  }) {
+    return (
+      <Suspense fallback={null}>
+        <CareerChiveArchivePage searchParams={searchParams} />
+      </Suspense>
+    );
+  }
+  ```
+
+b. Create the **Overview** page at `app/overview/page.tsx`:
+
+  ```typescript
+  export {
+    CareerChiveOverviewPage as default,
+    careerchiveOverviewMetadata as metadata,
+  } from "career-chive";
+  ```
+
+c. Create the **Search** page at `app/search/page.tsx`:
+
+  ```typescript
+  export {
+    CareerChiveSearchPage as default,
+    careerchiveSearchMetadata as metadata,
+  } from "career-chive";
+  ```
+
+d. Create the **Organizations** page at `app/organizations/page.tsx`:
+
+  ```typescript
+  import { Suspense } from "react";
+  import {
+    CareerChiveOrganizationsPage,
+    careerchiveOrganizationsMetadata as metadata,
+  } from "career-chive";
+
+  export { metadata };
+
+  export default function Page({
+    searchParams,
+  }: {
+    searchParams: Promise<{ add?: string; org?: string; edit?: string }>;
+  }) {
+    return (
+      <Suspense fallback={null}>
+        <CareerChiveOrganizationsPage searchParams={searchParams} />
+      </Suspense>
+    );
+  }
+  ```
+
+e. Create the **Login** page at `app/login/page.tsx`:
+
+  ```typescript
+  import { Suspense } from "react";
+  import {
+    CareerChiveLoginPage,
+    careerchiveLoginMetadata as metadata,
+  } from "career-chive";
+
+  export { metadata };
+
+  export default function Page() {
+    return (
+      <Suspense fallback={null}>
+        <CareerChiveLoginPage />
+      </Suspense>
+    );
+  }
+  ```
+
+f. Create the **Attachments** route at `app/api/attachments/route.ts`:
+
+  ```typescript
+  export { GET, POST } from "career-chive/attachments";
+  export const runtime = "nodejs";
+  ```
+
+g. Create the **Not Found** page at `app/not-found.tsx`:
+
+  ```typescript
+  export {
+    CareerChiveNotFound as default,
+    careerchiveNotFoundMetadata as metadata,
+  } from "career-chive";
+  ```
+
+# Nest CareerChive
+
+Put the app in a route group so the URLs stay at the slug defined by `NEXT_PUBLIC_CAREERCHIVE_PATH` and still share one layout. Use `app/careerchive/`:
+
+a. Create the **Archive** page at `app/careerchive/page.tsx`:
+
+  ```typescript
+  import { Suspense } from "react";
+  import {
+    CareerChiveArchivePage,
+    careerchiveArchiveMetadata as metadata,
+  } from "career-chive";
+
+  export { metadata };
+
+  export default function Page({
+    searchParams,
+  }: {
+    searchParams: Promise<{ org?: string; iso?: string }>;
+  }) {
+    return (
+      <Suspense fallback={null}>
+        <CareerChiveArchivePage searchParams={searchParams} />
+      </Suspense>
+    );
+  }
+  ```
+
+b. Create the **Overview** page at `app/careerchive/overview/page.tsx`:
+
+  ```typescript
+  export {
+    CareerChiveOverviewPage as default,
+    careerchiveOverviewMetadata as metadata,
+  } from "career-chive";
+  ```
+
+c. Create the **Search** page at `app/careerchive/search/page.tsx`:
+
+  ```typescript
+  export {
+    CareerChiveSearchPage as default,
+    careerchiveSearchMetadata as metadata,
+  } from "career-chive";
+  ```
+
+d. Create the **Organizations** page at `app/careerchive/organizations/page.tsx`:
+
+  ```typescript
+  import { Suspense } from "react";
+  import {
+    CareerChiveOrganizationsPage,
+    careerchiveOrganizationsMetadata as metadata,
+  } from "career-chive";
+
+  export { metadata };
+
+  export default function Page({
+    searchParams,
+  }: {
+    searchParams: Promise<{ add?: string; org?: string; edit?: string }>;
+  }) {
+    return (
+      <Suspense fallback={null}>
+        <CareerChiveOrganizationsPage searchParams={searchParams} />
+      </Suspense>
+    );
+  }
+  ```
+
+e. Create the **Login** page at `app/careerchive/login/page.tsx`:
+
+  ```typescript
+  import { Suspense } from "react";
+  import {
+    CareerChiveLoginPage,
+    careerchiveLoginMetadata as metadata,
+  } from "career-chive";
+
+  export { metadata };
+
+  export default function Page() {
+    return (
+      <Suspense fallback={null}>
+        <CareerChiveLoginPage />
+      </Suspense>
+    );
+  }
+  ```
+
+f. Create the **Attachments** route at `app/careerchive/api/attachments/route.ts`:
+
+  ```typescript
+  export { GET, POST } from "career-chive/attachments";
+  export const runtime = "nodejs";
+  ```
+
+(Optional) If you want to use the custom CareerChive 404 page inside of `/careerchive` pages:
+
+a. Create the **Not Found** page at `app/careerchive/not-found.tsx`:
+
+  ```typescript
+  export {
+    CareerChiveNotFound as default,
+    careerchiveNotFoundMetadata as metadata,
+  } from "career-chive";
+  ```
+
+b. Create the **Unknown URL** page at `app/careerchive/[...slug]/page.tsx`:
+
+  ```typescript
+  export {
+    CareerChiveUnknownPage as default,
+    careerchiveNotFoundMetadata as metadata,
+  } from "career-chive";
+  ```
+
+:::
+
+::: {.callout}
+# Next cannot see `dynamic`, `runtime`, or `instant` when they are re-exported from the package.
+
+Declare them in these files, as shown above.
+
+:::
+
+## Configure Next.js
+
+### Wrap Config
+
+`withCareerChiveConfig` adds `transpilePackages` so Next can compile the GitHub-installed package. It externalizes the Amazon Web Services (AWS) SDK used for uploads and inlines `FLAG_PRIVATE` and `FLAG_CHIVEBOT` for client components.
+
+In your `next.config.ts` (or `next.config.js`), wrap your existing config with `withCareerChiveConfig`:
+
+```typescript
+import type { NextConfig } from "next";
+import { withCareerChiveConfig } from "career-chive/config";
+
+const nextConfig: NextConfig = {
+  // your existing options
+};
+
+export default withCareerChiveConfig(nextConfig);
+```
+
+::: {.callout}
+# If you already define your own `rewrites()`, merge them carefully — `withCareerChiveConfig` adds its own.
+
+- Next, React, and React DOM must come from *your* app (`peerDependencies`).
+- If `node_modules/career-chive/node_modules/next` exists after install, delete `node_modules` and reinstall so you are not type-checking two copies of Next.
+
+:::
+
+### Add Stylesheet and Frame
+
+::: {.tabset}
+
+# CareerChive at Site Root
+
+Import `career-chive/styles.css` in your root layout (`app/layout.tsx`) to apply the CareerChive theme:
+
+
+  ```typescript
+  import type { Metadata } from "next";
+  import { CareerChiveLayout, careerchiveMetadata } from "career-chive";
+  import "career-chive/styles.css";
+
+  export const metadata: Metadata = {
+    title: "CareerChive",
+    description:
+      "Gain oversight over your professional accomplishments and experiences at work.",
+    icons: careerchiveMetadata.icons,
+  };
+
+  export default function RootLayout({
+    children,
+  }: Readonly<{ children: React.ReactNode }>) {
+    return (
+      <html lang="en">
+        <body>
+          <CareerChiveLayout>{children}</CareerChiveLayout>
+        </body>
+      </html>
+    );
+  }
+  ```
+
+# Nest CareerChive
+
+Import `career-chive/styles.css` in `app/careerchive/layout.tsx` to apply the CareerChive theme. Set the title and icons from `careerchiveMetadata` on this layout so this part of the site uses the CareerChive tab title and icon. The rest of your site keeps its own.
+
+  ```typescript
+  import type { Metadata } from "next";
+  import { CareerChiveLayout, careerchiveMetadata } from "career-chive";
+  import "career-chive/styles.css";
+
+  export const metadata: Metadata = {
+    title: careerchiveMetadata.title,
+    icons: careerchiveMetadata.icons,
+  };
+
+  export default CareerChiveLayout;
+  ```
+
+::: {.callout}
+# Keep your existing `globals.css` / Tailwind import for the rest of your application.
+
+CareerChive styles apply only inside CareerChive routes — the rest of your app keeps your own styling..
+
+:::
+
+:::
+
+
+## Run Development Server
+
+<Preview />
+
+<Build />
+
+<InstallNext />

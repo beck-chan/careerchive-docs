@@ -1,0 +1,95 @@
+---
+subtitle: Get started using a GitHub fork.
+---
+
+import InstallNext from "../_snippets/install-next.mdx"
+import Preview from "../_snippets/preview.mdx"
+import Build from "../_snippets/build.mdx"
+import Schema from "../_snippets/schema.mdx"
+import Env from "../_snippets/env.mdx"
+import Login from "../_snippets/login.mdx"
+
+# Quickstart
+
+::: {.callout}
+# Before You Begin
+
+- [x] You need to have completed the [Prerequisites](/docs/prerequisites) first.
+- [x] (For cloud deployment) You have a Vercel account and project.
+
+Already have an existing Next.js app you want to use your CareerChive with? [Install with `npm`](/docs/install) instead.
+
+:::
+
+## Setting Up
+
+### Grab CareerChive Repository
+
+::: {tabset}
+
+# Via GitHub
+
+::: {.columns}
+
+::: {.80}
+
+    Fork [`https://github.com/beck-chan/career-chive/`](https://github.com/beck-chan/career-chive/){.blank} on GitHub, then clone *your* copy into your local environment:
+
+:::
+
+::: {.20}
+
+[Fork on GitHub](https://github.com/beck-chan/career-chive/fork){.button .blank}
+
+:::
+
+:::
+
+```bash
+git clone https://github.com/YOUR_USER/career-chive.git
+cd career-chive
+# Install dependencies
+npm install
+```
+
+# Via CLI
+
+With the [GitHub CLI](https://cli.github.com/){.blank} installed and signed in (`gh auth login`):
+
+```bash
+# Fork to your account and clone in one step
+gh repo fork beck-chan/career-chive --clone
+cd career-chive
+# Install dependencies
+npm install
+```
+
+:::
+
+### Set Up Environment Variables
+
+1. Copy the `.env.example` file to `.env.local`:
+
+    ```bash
+    cp .env.example .env.local
+    ```
+
+<Env />
+
+## Installing
+
+::: {tabset}
+
+<Schema />
+
+<Login />
+
+# 3. Run Development Server
+
+<Preview />
+
+:::
+
+<Build />
+
+<InstallNext />

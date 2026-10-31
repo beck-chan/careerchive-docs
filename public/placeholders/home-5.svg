@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img">
+  <title>Placeholder</title>
+  <rect width="640" height="400" fill="#f3f3f3"/>
+  <rect x="18" y="18" width="604" height="364" fill="none" stroke="#d39aab" stroke-width="6"/>
+  <path fill="#ffffff" d="M70 70h300v250H70z"/>
+  <path fill="#c6b6cd" d="M390 70h180v250H390z"/>
+  <path fill="#d39aab" d="M90 92h260v10H90z"/>
+  <path fill="#9da762" d="M90 130h200v16H90z"/>
+  <path fill="#c5cba3" d="M90 164h240v12H90z"/>
+  <path fill="#c5cba3" d="M90 190h180v12H90z"/>
+  <path fill="#8b5c7e" d="M410 250h140v40H410z"/>
+  <text x="320" y="372" text-anchor="middle" fill="#61683b" font-family="Georgia, serif" font-size="22">Placeholder</text>
+</svg>
