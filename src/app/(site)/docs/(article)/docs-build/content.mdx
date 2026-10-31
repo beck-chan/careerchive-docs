@@ -151,7 +151,9 @@ The explorer catalogs operations from a live PostgREST OpenAPI document. [`loadD
 ## Search & LLM Ingestion
 
 ::: {.callout}
-# [`composeDocsCorpus`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/compose.ts){.blank} reads each `content.mdx` page under `src/app/(site)/docs`, inserts shared `_snippets`, and skips pages with `search: false`.
+{/* # [`composeDocsCorpus`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/compose.ts){.blank} reads each `content.mdx` page under `src/app/(site)/docs`, inserts shared `_snippets`, and skips pages with `search: false`. */}
+
+# [`composeDocsCorpus`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/compose.ts){.blank} reads each `content.mdx` page under `src/app/(site)/docs` and inserts shared `_snippets`.
 
 - Humans search that copy with Search or Search the API.
 - Large language models (LLMs) find it through [`/llms.txt`](/llms.txt){.blank} and `/docs/<slug>.md`.
@@ -172,7 +174,7 @@ Nothing is hand-maintained for search or LLM catalogs. On each deploy, compose r
 
 - Host pages only (`**/content.mdx`); `_snippets` are never rendered or indexed independently
 - Snippet imports are inlined into the host before flattening headings and body
-- Pages with `search: false` are omitted (Docs Reference)
+{/* - Pages with `search: false` are omitted (Docs Reference) */}
 - One overview chunk per page, plus one chunk per heading that has body text
 - OpenAPI / Scalar operations are not returned in this search — only docs `.mdx` files (including `/docs/api` prose from `api/content.mdx`)
 
@@ -191,7 +193,7 @@ Agents follow **discover → fetch → cite** against the same composed guides t
 - One line per indexed guide with HTML and `.md` links
 - Grouped by nav section when available
 - A short API pointer to `/docs/api` (Scalar) — no OpenAPI schema dump
-- Same opt-out as the user guide search (`search: false`)
+{/* - Same opt-out as the user guide search (`search: false`) */}
 
 **`/docs/<slug>.md`**
 

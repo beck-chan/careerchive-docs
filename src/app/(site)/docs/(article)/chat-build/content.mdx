@@ -16,7 +16,8 @@ subtitle: How was the docs chatbot implemented?
 
 ## Docs Indexing
 
-- Pages with `search: false` are left out of `docs_section`. The same skip applies to user guide search and [`/llms.txt`](/llms.txt){.blank}. Indexed rows are stored without a `public` flag, and [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank} retrieves from those rows as written.
+{/* - Pages with `search: false` are left out of `docs_section`. The same skip applies to user guide search and [`/llms.txt`](/llms.txt){.blank}. Indexed rows are stored without a `public` flag, and [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank} retrieves from those rows as written. */}
+- Indexed rows are stored without a `public` flag, and [`/docs/chat`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/chat/route.ts){.blank} retrieves from those rows as written.
 - Sync reads a Git ref. User guide search and [`/llms.txt`](/llms.txt){.blank} read the working tree when those routes are built.
 
 ::: {.tabset}
@@ -32,13 +33,13 @@ subtitle: How was the docs chatbot implemented?
 
 # sync-docs.ts
 
-[`npm run sync-docs`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} runs [`scripts/sync-docs.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/sync-docs.ts){.blank} to embed that text and upsert it into `docs_section`. It needs `DOCS_GEMINI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SECRET_KEY`:
+[`npm run sync-docs`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} runs [`scripts/sync-docs.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/sync-docs.ts){.blank} to embed that text and upsert it into `docs_section`:
 
 - Gemini (`gemini-embedding-001`, 768 dimensions, `RETRIEVAL_DOCUMENT`) turns chunks into vectors in batches of 20 for meaning search.
 - Each chunk is stored with a `content_hash` of that text. A matching hash skips Gemini and the write.
-- Title, heading, and body fill a weighted `search_vector` on the table (English full text, so "running" and "run" can match). A title match outranks a heading, and a heading outranks the body. Postgres generates that column. The upsert leaves it alone.
-- Rows are upserted with the Supabase `service_role` client ([`createServiceClient()`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/supabase/service.ts){.blank}). Chunk ids that disappeared from the corpus are deleted.
-- Vectors already computed stay in `internal/docsbot/embed-cache.json` (gitignored), so a machine that embedded a chunk can skip Gemini when the row is missing. A merged docs change on `main`, or a manual run of [Sync docs index](https://github.com/beck-chan/careerchive-docs/blob/main/.github/workflows/sync-docs.yml){.blank}, runs the same script. Actions uses `content_hash` because that cache file is not in the repo.
+- Title, heading, and body fill a weighted `search_vector` on the table (English full text, so "running" and "run" can match). A title match outranks a heading, and a heading outranks the body. 
+- Rows are upserted with the Supabase `service_role` client ([`createServiceClient()`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/supabase/service.ts){.blank}). Chunk IDs that disappeared from the corpus are deleted.
+- Vectors already computed stay in `internal/docsbot/embed-cache.json` (gitignored), so a machine that embedded a chunk can skip Gemini when the row is missing. A merged docs change on `main` runs the same script from GitHub Actions, which uses `content_hash` because that cache file is not in the repo.
 
 :::
 
