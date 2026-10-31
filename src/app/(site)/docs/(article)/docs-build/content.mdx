@@ -70,16 +70,15 @@ The Remark plugin also pulls page metadata out of the paired `content.mdx` so `p
 
 ### Landing Page
 
-The main documentation landing page (`/docs`) lives at [`src/app/(site)/docs/page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/page.tsx){.blank}, and is built by React, not MDX. It is outside `(article)`, so the sidebar is not on this page:
+The main documentation landing page (`/docs`) lives at [`src/app/(site)/docs/page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/page.tsx){.blank}, and is built by React, not MDX and hides the sidebar navigation:
 
 - A `.docs-index` wrapper is what switches the layout from a guide to a landing.
 - Card titles and subtitles come from each guide's `content.mdx` through [`docs-page-meta.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/docs-page-meta.ts){.blank}.
 
 This landing page:
 
-- Reads `DOCS_NAV_SECTIONS` from [`_nav/docs-nav-data.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/docs-nav-data.ts){.blank}.
-- Renders `Installation` / `Guides` / `Reference` / `Internal` as sections of cards. Quickstart is the highlighted card.
-- Puts `Internal` in a collapsible group.
+- Reads `DOCS_NAV_SECTIONS` from [`_nav/docs-nav-data.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/docs-nav-data.ts){.blank} (sidebar navigation).
+- Renders `Installation` / `Guides` / `Reference` / `Internal` as sections of cards, with `Internal` in a collapsible group.
 
 ### Content Pages
 
@@ -89,24 +88,19 @@ Since every guide is wrapped in [`src/app/(site)/docs/(article)/layout.tsx`](htt
 
 # Guide Pages
 
-[`DocsShell`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsShell.tsx){.blank} is the sidebar ([`DocsNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/DocsNav.tsx){.blank}) and the right rail. On a guide, that rail is [`DocsToc`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsToc.tsx){.blank}.
+Articles feature a layout inspired by the CareerChive application interface.
 
 # API Library
 
-The API Library (`/docs/api`) keeps that sidebar. [`DocsRail`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsRail.tsx){.blank} swaps the table of contents for [`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank}. The explorer is the [`DocsApiExplorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiExplorer.tsx){.blank} frame inside the article.
+[`DocsRail`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsRail.tsx){.blank} on the API Library (`/docs/api`) swaps the table of contents for [`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank}.
 
 :::
 
 ## API Library
 
-The API Library is a hybrid page ([`src/app/(site)/docs/(article)/api/page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/page.tsx){.blank}) — it renders [`content.mdx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/content.mdx){.blank}, and that file mounts [`DocsApiExplorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiExplorer.tsx){.blank}, a customized [Scalar API](https://scalar.com/){.blank} explorer.
+The API Library is a hybrid page ([`src/app/(site)/docs/(article)/api/page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/page.tsx){.blank}) — it renders [`content.mdx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/content.mdx){.blank}, and that file mounts [`DocsApiExplorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiExplorer.tsx){.blank} within the article frame, a customized [Scalar API](https://scalar.com/){.blank} explorer.
 
 The explorer catalogs operations from a live PostgREST OpenAPI document. [`loadDatabaseOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/loadDatabaseOpenApi.ts){.blank} fetches `{NEXT_PUBLIC_SUPABASE_URL}/rest/v1/` with `SUPABASE_SECRET_KEY` so tables without an `anon` policy still appear. It then drops the docs chatbot tables and the functions that maintain them.
-
-::: {.callout}
-Test Request is hidden. The explorer shows the CareerChive Data API for reading.
-
-:::
 
 ### Live OpenAPI
 
@@ -119,16 +113,14 @@ Test Request is hidden. The explorer shows the CareerChive Data API for reading.
 - Caches the fetch (React `cache()` plus a 60-second revalidate). Guides do not fetch OpenAPI. The API Library loads it when the page or [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank} is opened.
 - [`swaggerToOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/swaggerToOpenApi.ts){.blank} turns the PostgREST document into OpenAPI 3.1.
 - After fetch it stamps the CareerChive API `info` title and description, and `apikey` security on every operation. `servers` are removed.
-- Drops `docs_section`, `docs_query_embedding`, `docs_chat_session`, `docs_chat_message`, `docs_chat_limits`, and the functions that serve them (`search_docs_sections`, `match_docs_sections`, `consume_docs_chat_quota`, and the other hidden RPCs).
-- Fills tag descriptions for the archive tables, ChiveBot tables, and `ensure_generated_days`.
-- [`typesToOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/typesToOpenApi.ts){.blank} applies that `apikey` security. [`apiCatalog.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/apiCatalog.ts){.blank} turns the same spec into the rail's tags and operations, using Scalar's tag anchors.
+- [`typesToOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/typesToOpenApi.ts){.blank} applies that `apikey` security. [`apiCatalog.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/apiCatalog.ts){.blank} turns the same spec into the API search sidebar's tags and operations, using Scalar's tag anchors.
 
 # layout.tsx
 
 [`layout.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/layout.tsx){.blank}:
 
 - Shared docs chrome only (search provider + chatbot). It does not fetch OpenAPI.
-- On `/docs/api`, [`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank} loads the catalog and jumps the explorer to that tag or operation. Until the catalog arrives, the rail is empty. [`DocsNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/DocsNav.tsx){.blank} stays the usual docs links. Scalar's own sidebar stays inside the explorer frame. On a narrow screen, [`DocsApiMobileNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiMobileNav.tsx){.blank} opens that sidebar over the frame.
+- On `/docs/api`, [`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank} loads the catalog and jumps the explorer to that tag or operation. Until the catalog arrives, the API search sidebar is empty. [`DocsNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/DocsNav.tsx){.blank} stays the usual docs links. Scalar's own sidebar stays inside the explorer frame. On a narrow screen, [`DocsApiMobileNav`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiMobileNav.tsx){.blank} opens that sidebar over the frame.
 
 :::
 
@@ -149,7 +141,7 @@ Test Request is hidden. The explorer shows the CareerChive Data API for reading.
 [`scalarConfig.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/scalarConfig.ts){.blank}:
 
 - Turns Scalar's own theme off and injects `customCss` that remaps Scalar onto CareerChive tokens.
-- Hides Scalar's search bar. **Search the API** in the right rail filters the catalog and jumps the explorer.
+- Hides Scalar's search bar. **Search the API** in the right sidebar filters the catalog and jumps the explorer.
 - Hides the Models section (`hideModels`).
 - Starts with every tag collapsed (`defaultOpenAllTags` / `defaultOpenFirstTag` off). Scalar's sidebar matches: section headings stay collapsed until that heading is opened. Click an operation to jump to that call.
 - Hides **Test Request** (`hideTestRequestButton`).
@@ -171,7 +163,7 @@ Nothing is hand-maintained for search or LLM catalogs. On each deploy, compose r
 
 # User Guide Search
 
-**Search** in the sidebar, on the landing page, or with `Ctrl`+`K` / `⌘`+`K` opens the shared overlay powered by [`DocsSearch.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsSearch.tsx){.blank}:
+**Search** opens the shared overlay powered by [`DocsSearch.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsSearch.tsx){.blank}:
 
 - [`DocsSearchProvider`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsSearch.tsx){.blank} loads [`/docs/search-index`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/search-index/route.ts){.blank} the first time Search opens. Until the index arrives the overlay shows **Indexing…**. The browser ranks that JSON with MiniSearch.
 - [`searchTerms.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/searchTerms.ts){.blank} expands light English inflections at index and query time (`managing` ↔ `manage`), with prefix match and a bit of fuzzy room on longer terms. A heading outranks a title, which outranks the section name, which outranks the body.
@@ -186,7 +178,7 @@ Nothing is hand-maintained for search or LLM catalogs. On each deploy, compose r
 
 # API Library Search
 
-On the API Library page (`/docs/api`), the right rail is **Search the API** ([`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank}). It filters tags and operations from [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank} and jumps the explorer to that anchor. The sidebar **Search** control still opens the user guide overlay.
+On the API Library page (`/docs/api`), the right sidebar is **Search the API** ([`DocsApiSearch`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_components/DocsApiSearch.tsx){.blank}), which filters tags and operations from [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank} and jumps the explorer to that anchor. 
 
 # LLM Ingestion
 
