@@ -5,7 +5,7 @@ subtitle: How was the CareerChive application implemented?
 # Application Build
 
 ::: {.callout}
-# CareerChive is Next.js application with an optional login for one admin user.
+# CareerChive is a Next.js application with an optional login for one admin user.
 
 - [`src/entries/frame.tsx`](https://github.com/beck-chan/career-chive/blob/main/src/entries/frame.tsx){.blank} loads the archive of daily logs for organizations, then renders [`AppChrome`](https://github.com/beck-chan/career-chive/blob/main/src/components/AppChrome.tsx){.blank} around every page.
 - [`src/app/page.tsx`](https://github.com/beck-chan/career-chive/blob/main/src/app/page.tsx){.blank} renders [`ArchiveView`](https://github.com/beck-chan/career-chive/blob/main/src/components/ArchiveView.tsx){.blank} for a day's log.
@@ -40,6 +40,89 @@ The schema applied by running [`scripts/schema.sql`](https://github.com/beck-cha
 `ensure_generated_days()` inserts empty weekday shells for each visible organization, from Autogenerate From (clamped up to Archive Start and Date Active) through today in the archive time zone, and stops the day before Date Inactive. It does nothing until Autogenerate From is set. `ON CONFLICT DO NOTHING` never overwrites a row. [`pg_cron`](https://github.com/citusdata/pg_cron){.blank} runs it hourly as `careerchive-ensure-days`. Saving an organization, moving Autogenerate From earlier, changing the time zone, signing in, and loading the archive call it too.
 
 ChiveBot tables are a separate script. See [ChiveBot Build](/docs/chivebot-build).
+
+# Entity Relationship Diagram
+
+<DocsErdGrid>
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    organizations {
+        text id PK
+        text name
+        date date_active
+        date date_inactive
+        boolean hidden
+        int_array auto_generate_days
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    days {
+        uuid id PK
+        text organization_id FK
+        date work_date
+        text attendance
+        text notes
+        int rating
+        text comments
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    organizations ||--o{ days : "organization_id"
+`} />
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    days {
+        uuid id PK
+    }
+    work {
+        text id PK
+        uuid day_id FK
+        text title
+        text description
+        text link
+        int position
+    }
+    citations {
+        text id PK
+        uuid day_id FK
+        text title
+        text url
+        text attachment
+        text attachment_key
+        int position
+    }
+    days ||--o{ work : "day_id"
+    days ||--o{ citations : "day_id"
+`} />
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    settings {
+        int id PK
+        text username
+        text password_hash
+        text password_encrypted
+        date archive_start_date
+        date autogenerate_start_date
+        text timezone
+        timestamptz created_at
+        timestamptz updated_at
+    }
+`} />
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    login_attempts {
+        uuid id PK
+        text ip
+        text username
+        timestamptz attempted_at
+    }
+`} />
+
+</DocsErdGrid>
 
 # Relationships
 

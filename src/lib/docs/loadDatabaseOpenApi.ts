@@ -83,13 +83,16 @@ function collectTagNames(spec: OpenApiSpec) {
   return names;
 }
 
-function applyTagDescriptions(spec: OpenApiSpec) {
+function applyTagDescriptions(
+  spec: OpenApiSpec,
+  descriptions: Record<string, string> = TAG_DESCRIPTIONS,
+) {
   const previous = new Map(
     (spec.tags ?? []).map((tag) => [tag.name, tag] as const),
   );
   spec.tags = collectTagNames(spec).map((name) => {
     const current = previous.get(name) ?? { name };
-    const description = TAG_DESCRIPTIONS[tagDescriptionKey(name)];
+    const description = descriptions[tagDescriptionKey(name)];
     return description ? { ...current, name, description } : { ...current, name };
   });
 }
@@ -189,6 +192,40 @@ function omitPostgrestMeta(spec: OpenApiSpec) {
   omitHiddenComponents(spec);
 }
 
+const DOCS_CHAT_TABLES = new Set([
+  "docs_section",
+  "docs_query_embedding",
+  "docs_chat_session",
+  "docs_chat_message",
+  "docs_chat_limits",
+]);
+
+const DOCS_CHAT_RPCS = new Set(["search_docs_sections", "match_docs_sections"]);
+
+const BOT_TAG_DESCRIPTIONS: Record<string, string> = {
+  docs_section:
+    "MDX chunks and embeddings synced from the docs repo. Chat reads this table through the search RPCs. `service_role` only.",
+  docs_query_embedding:
+    "Cache of question embeddings. The row `id` is a hash of the question, so the question text is not stored. `service_role` only.",
+  docs_chat_session:
+    "One conversation. Cookie `docs_chat_id` stores the row `id`. The browser never queries this table.",
+  docs_chat_message:
+    "One turn in that conversation (`role`, `content`, and `sources` on replies). Deleting a session deletes its messages.",
+  docs_chat_limits:
+    "Chat IP quotas, one row per hashed window (`key`, `points`, `expire`). Five questions per hour and ten per day, written with the service role client.",
+  search_docs_sections: "Wording match on `docs_section.search_vector`.",
+  match_docs_sections:
+    "Meaning match on `docs_section` embeddings (cosine distance).",
+};
+
+function isDocsChatCatalogPath(path: string) {
+  const key = catalogPathKey(path);
+  const table = key.replace(/^\//, "");
+  if (DOCS_CHAT_TABLES.has(table)) return true;
+  const rpc = key.match(/^\/rpc\/([^/]+)$/);
+  return Boolean(rpc && DOCS_CHAT_RPCS.has(rpc[1]));
+}
+
 function overlayInfo(spec: OpenApiSpec) {
   spec.info = {
     ...spec.info,
@@ -199,7 +236,45 @@ function overlayInfo(spec: OpenApiSpec) {
   };
 }
 
-async function fetchOpenApi(): Promise<OpenApiSpec> {
+function stampSecurity(spec: OpenApiSpec) {
+  spec.components = spec.components ?? {};
+  spec.components.securitySchemes = {
+    ...spec.components.securitySchemes,
+    apikey: API_KEY_SCHEME,
+  };
+  spec.security = [{ apikey: [] }];
+  applyOperationSecurity(spec.paths);
+  delete spec.host;
+  delete spec.basePath;
+  delete spec.schemes;
+  delete spec.servers;
+}
+
+/** Move docs chatbot paths into their own spec. The API Library keeps omitting them. */
+function extractDocsChatCatalog(spec: OpenApiSpec): OpenApiSpec {
+  const paths: NonNullable<OpenApiSpec["paths"]> = {};
+  for (const [path, methods] of Object.entries(spec.paths ?? {})) {
+    if (!methods || !isDocsChatCatalogPath(path)) continue;
+    paths[path] = structuredClone(methods);
+    delete spec.paths?.[path];
+  }
+  const bot: OpenApiSpec = {
+    openapi: spec.openapi ?? "3.1.0",
+    info: {
+      title: "Docs chat",
+      version: spec.info?.version ?? "1.0.0",
+    },
+    paths,
+    components: spec.components ? structuredClone(spec.components) : undefined,
+  };
+  applyTagDescriptions(bot, BOT_TAG_DESCRIPTIONS);
+  return bot;
+}
+
+async function fetchOpenApiPair(): Promise<{
+  library: OpenApiSpec;
+  bot: OpenApiSpec;
+}> {
   const url = envOrThrow(
     "NEXT_PUBLIC_SUPABASE_URL",
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -231,26 +306,24 @@ async function fetchOpenApi(): Promise<OpenApiSpec> {
   const normalized = swagger2ToOpenApi31(
     spec as Record<string, unknown>,
   ) as OpenApiSpec;
+  const bot = extractDocsChatCatalog(normalized);
   omitPostgrestMeta(normalized);
   applyTagDescriptions(normalized);
   overlayInfo(normalized);
-  normalized.components = normalized.components ?? {};
-  normalized.components.securitySchemes = {
-    ...normalized.components.securitySchemes,
-    apikey: API_KEY_SCHEME,
-  };
-  normalized.security = [{ apikey: [] }];
-  applyOperationSecurity(normalized.paths);
-  delete normalized.host;
-  delete normalized.basePath;
-  delete normalized.schemes;
-  delete normalized.servers;
+  stampSecurity(normalized);
+  stampSecurity(bot);
 
-  return normalized;
+  return { library: normalized, bot };
 }
 
+const loadOpenApiPair = cache(fetchOpenApiPair);
+
 export const loadDatabaseOpenApi = cache(async (): Promise<OpenApiSpec> => {
-  return fetchOpenApi();
+  return (await loadOpenApiPair()).library;
+});
+
+export const loadBotOpenApi = cache(async (): Promise<OpenApiSpec> => {
+  return (await loadOpenApiPair()).bot;
 });
 
 export async function loadDatabaseOpenApiOrNull() {
@@ -259,6 +332,16 @@ export async function loadDatabaseOpenApiOrNull() {
   } catch (error) {
     const message = error instanceof Error ? error.message : "OpenAPI fetch failed";
     console.error("[docs] OpenAPI catalog unavailable:", message);
+    return { spec: null, error: message };
+  }
+}
+
+export async function loadBotOpenApiOrNull() {
+  try {
+    return { spec: await loadBotOpenApi() };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "OpenAPI fetch failed";
+    console.error("[docs] Docs chat catalog unavailable:", message);
     return { spec: null, error: message };
   }
 }

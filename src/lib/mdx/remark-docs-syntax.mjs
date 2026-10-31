@@ -480,13 +480,27 @@ function takeLooseBlock(lines, start) {
 
 // Indents outside a list are discarded by Markdown. Wrap them so the
 // rendered block stays nested under the paragraph that introduced it.
+function oddBackticks(line) {
+  let count = 0;
+  for (let n = 0; n < line.length; n += 1) {
+    if (line[n] === "`") count += 1;
+  }
+  return count % 2 === 1;
+}
+
 function wrapLooseIndents(lines) {
   const out = [];
   let i = 0;
   let inCode = false;
+  let inTemplate = false;
   let fenceChar = "";
   let fenceLen = 0;
   let listIndent = null;
+
+  function pushTracked(line) {
+    out.push(line);
+    if (oddBackticks(line)) inTemplate = !inTemplate;
+  }
 
   while (i < lines.length) {
     const line = lines[i];
@@ -496,6 +510,12 @@ function wrapLooseIndents(lines) {
     if (inCode) {
       out.push(line);
       if (isClosingCodeFence(trimmed, fenceChar, fenceLen)) inCode = false;
+      i += 1;
+      continue;
+    }
+
+    if (inTemplate) {
+      pushTracked(line);
       i += 1;
       continue;
     }
@@ -522,7 +542,7 @@ function wrapLooseIndents(lines) {
     }
 
     if (!trimmed) {
-      out.push(line);
+      pushTracked(line);
       i += 1;
       continue;
     }
@@ -532,13 +552,13 @@ function wrapLooseIndents(lines) {
       if (listIndent == null || indent.length <= listIndent) {
         listIndent = indent.length;
       }
-      out.push(line);
+      pushTracked(line);
       i += 1;
       continue;
     }
 
     if (listIndent != null && indent.length > listIndent) {
-      out.push(line);
+      pushTracked(line);
       i += 1;
       continue;
     }
@@ -548,7 +568,7 @@ function wrapLooseIndents(lines) {
       continue;
     }
 
-    out.push(line);
+    pushTracked(line);
     i += 1;
   }
 

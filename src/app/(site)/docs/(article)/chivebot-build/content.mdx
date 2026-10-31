@@ -99,3 +99,70 @@ The panel stays off until `FLAG_CHIVEBOT` is on, `GEMINI_API_KEY` is set, and `c
 - **Clear Chat** deletes these rows with the session. Archive field embeddings in `chivebot_entry_embedding` stay until the log field, day, or organization is removed.
 
 :::
+
+## Entity Relationship Diagram
+
+<DocsErdGrid layout="chivebot">
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    chivebot_session {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    chivebot_message {
+        uuid id PK
+        uuid session_id FK
+        text role
+        text content
+        jsonb citations
+        timestamptz created_at
+    }
+    chivebot_query_embedding {
+        uuid id PK
+        uuid session_id FK
+        uuid message_id FK
+        vector embedding
+        timestamptz created_at
+    }
+    chivebot_session ||--o{ chivebot_message : "session_id"
+    chivebot_session ||--o{ chivebot_query_embedding : "session_id"
+    chivebot_message ||--o| chivebot_query_embedding : "message_id"
+`} />
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    organizations {
+        text id PK
+    }
+    days {
+        uuid id PK
+    }
+    work {
+        text id PK
+    }
+    citations {
+        text id PK
+    }
+    chivebot_entry_embedding {
+        uuid id PK
+        text section
+        text source_id
+        text organization_id FK
+        uuid day_id FK
+        date work_date
+        text work_id FK
+        text citation_id FK
+        text content
+        vector embedding
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    organizations ||--o{ chivebot_entry_embedding : "organization_id"
+    days ||--o{ chivebot_entry_embedding : "day_id"
+    work |o--o{ chivebot_entry_embedding : "work_id"
+    citations |o--o{ chivebot_entry_embedding : "citation_id"
+`} />
+
+</DocsErdGrid>

@@ -1,0 +1,132 @@
+.docs-bot-api-host {
+  position: relative;
+  height: 70vh;
+  min-height: 32rem;
+  border: 1px solid var(--blossom-pink);
+  background: var(--page);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.docs-api-pending {
+  margin: 0.75rem 0 0;
+  color: var(--title-muted);
+  font-family: var(--body-font);
+  font-size: 0.95rem;
+}
+
+.docs-bot-api-host .scalar-app.references-layout,
+.docs-bot-api-host .scalar-app.scalar-api-reference {
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  --full-height: 100% !important;
+}
+
+.docs-bot-api-host .references-layout {
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+
+.docs-bot-api-host .scalar-app .t-doc__sidebar {
+  display: flex !important;
+}
+
+@media (max-width: 720px) {
+  .docs-bot-api-host .scalar-app .t-doc__sidebar,
+  .docs-bot-api-host .t-doc__header {
+    display: none !important;
+  }
+
+  .docs-bot-api-host .scalar-app.references-layout,
+  .docs-bot-api-host .scalar-app.scalar-api-reference,
+  .docs-bot-api-host .references-layout {
+    --scalar-header-height: 0px;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    grid-template-areas: "rendered" !important;
+  }
+}
+
+.docs-bot-api-host .references-rendered,
+.docs-bot-api-host .t-doc__sidebar {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+.docs-bot-api-host .introduction-section,
+.docs-bot-api-host [data-docs-intro="true"],
+.docs-bot-api-host .darklight-reference,
+.docs-bot-api-host .scalar-mcp-layer,
+.docs-bot-api-host a[href="https://www.scalar.com"],
+.docs-bot-api-host a[href^="cursor:"],
+.docs-bot-api-host a[href^="vscode:"] {
+  display: none !important;
+}
+
+.docs-article .docs-bot-api ul,
+.docs-article .docs-bot-api ol,
+.mdx-page .docs-bot-api ul,
+.mdx-page .docs-bot-api ol {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  line-height: inherit;
+}
+
+.docs-article .docs-bot-api li + li,
+.docs-article .docs-bot-api li > p,
+.docs-article .docs-bot-api li > ul,
+.docs-article .docs-bot-api li > ol,
+.mdx-page .docs-bot-api li + li,
+.mdx-page .docs-bot-api p {
+  margin: 0;
+  padding: 0;
+}
+
+.docs-article .docs-bot-api table {
+  width: auto;
+  border-collapse: unset;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.docs-article .docs-bot-api th,
+.docs-article .docs-bot-api td {
+  padding: 0;
+  border: 0;
+  text-align: inherit;
+  vertical-align: inherit;
+  font-family: inherit;
+  letter-spacing: normal;
+}
+
+.mdx-page .docs-bot-api pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.mdx-page .docs-bot-api :not(pre) > code {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.docs-tabset-panel:has(.docs-bot-api) {
+  overflow: visible;
+}

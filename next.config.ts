@@ -30,7 +30,7 @@ const withMDX = createMDX({
   options: {
     remarkPlugins: [
       "remark-gfm",
-      [path.join(root, "src/lib/mdx/remark-docs-syntax.mjs"), { rev: 9 }],
+      [path.join(root, "src/lib/mdx/remark-docs-syntax.mjs"), { rev: 10 }],
     ],
     rehypePlugins: [
       [path.join(root, "src/lib/mdx/rehype-docs-slug.mjs"), { rev: 2 }],

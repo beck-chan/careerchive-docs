@@ -96,3 +96,73 @@ Clicking the [ask the documentation]{.smallcaps} button ([`DocsChat`](https://gi
 - **Clear Chat** does not reset quotas.
 
 :::
+
+## Chatbot Reference
+
+::: {.tabset}
+
+# API Library
+
+<DocsBotApiReference />
+
+# Entity Relationship Diagram
+
+<DocsErdGrid layout="chat">
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    docs_chat_session {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    docs_chat_message {
+        uuid id PK
+        uuid session_id FK
+        text role
+        text content
+        jsonb sources
+        timestamptz created_at
+    }
+    docs_chat_session ||--o{ docs_chat_message : "session_id"
+`} />
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    docs_chat_limits {
+        varchar key PK
+        int points
+        bigint expire
+    }
+`} />
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    docs_query_embedding {
+        text id PK
+        text model
+        int dims
+        text task_type
+        vector embedding
+        timestamptz created_at
+    }
+`} />
+
+<DocsMermaid chart={`erDiagram
+    direction TB
+    docs_section {
+        text id PK
+        text href
+        text title
+        text heading
+        text section
+        text body
+        text content_hash
+        vector embedding
+        tsvector search_vector
+    }
+`} />
+
+</DocsErdGrid>
+
+:::

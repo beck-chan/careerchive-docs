@@ -8,7 +8,9 @@ import {
 } from "react";
 import Link from "next/link";
 import { DocsApiExplorer } from "@/app/(site)/docs/_components/DocsApiExplorer";
+import { DocsBotApiReference } from "@/app/(site)/docs/_components/DocsBotApiReference";
 import { DocsCallout } from "@/app/(site)/docs/_components/DocsCallout";
+import { DocsErdGrid } from "@/app/(site)/docs/_components/DocsErdGrid";
 import { DocsCodeBlock } from "@/app/(site)/docs/_components/DocsCodeBlock";
 import { DocsColumn, DocsColumns } from "@/app/(site)/docs/_components/DocsColumns";
 import { DocsGear } from "@/app/(site)/docs/_components/DocsGear";
@@ -175,6 +177,8 @@ const components: MDXComponents = {
   HomeFigureCycle,
   HomeGalleryButton,
   DocsApiExplorer,
+  DocsBotApiReference,
+  DocsErdGrid,
   DocsGear,
   DocsLock,
   DocsCallout,

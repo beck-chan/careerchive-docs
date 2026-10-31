@@ -26,6 +26,7 @@
     "career-chive": "github:beck-chan/career-chive",
     "estree-util-value-to-estree": "^3.5.0",
     "highlight.js": "^11.12.0",
+    "mermaid": "^11.17.2",
     "minisearch": "^7.2.0",
     "next": "16.3.3",
     "react": "19.2.8",
