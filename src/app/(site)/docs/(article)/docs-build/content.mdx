@@ -20,7 +20,7 @@ Defined as a [`package.json`](https://github.com/beck-chan/careerchive-docs/blob
 
 - [`src/lib/flags.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/flags.ts){.blank} reads that environment variable as `flags.app`. 
 - [`src/proxy.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/proxy.ts){.blank} rewrites `/beck` while that flag is off.
-- [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} lists `FLAG_APP` under `.env.local` so Next can send it to the browser. 
+- [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} lists `FLAG_APP` under env so Next can send it to the browser. 
 
 {/* 
 [`next.config.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/next.config.ts){.blank} wraps that config with [`withCareerChiveConfig()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/withCareerChiveConfig.ts){.blank} so `/beck` can mount the archive when the flag is on. See [Application Build](/docs/app-build).

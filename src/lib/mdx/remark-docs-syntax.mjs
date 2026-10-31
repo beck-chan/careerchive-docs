@@ -1432,13 +1432,17 @@ function isFence(node, pattern) {
 }
 
 function headingIcon(node) {
+  let seenText = false;
   for (const child of node.children ?? []) {
+    if (child.type === "text" && String(child.value ?? "").trim()) {
+      seenText = true;
+    }
     const icon = TAB_ICONS[child?.name];
     if (
       icon &&
       (child.type === "mdxJsxTextElement" || child.type === "mdxJsxFlowElement")
     ) {
-      return icon;
+      return { icon, place: seenText ? "after" : "before" };
     }
   }
   return undefined;
@@ -1466,14 +1470,20 @@ function isSnippetJsx(node, imports) {
 }
 
 function snippetTabHeading(tab) {
-  const children = [{ type: "text", value: tab.label }];
+  const text = { type: "text", value: tab.label };
+  const children = [text];
   if (tab.icon === "lock" || tab.icon === "gear") {
-    children.push({
+    const icon = {
       type: "mdxJsxTextElement",
       name: tab.icon === "lock" ? "DocsLock" : "DocsGear",
       attributes: [],
       children: [],
-    });
+    };
+    if (tab.iconPlace === "before") {
+      children.unshift(icon);
+    } else {
+      children.push(icon);
+    }
   }
   return { type: "heading", depth: 1, children };
 }
@@ -1532,9 +1542,11 @@ function splitTabs(nodes) {
       if (current) {
         tabs.push(current);
       }
+      const marked = headingIcon(node);
       current = {
         label: toPlainText(node).trim() || "Tab",
-        icon: headingIcon(node),
+        icon: marked?.icon,
+        iconPlace: marked?.place,
         children: [],
       };
       continue;
@@ -1562,6 +1574,7 @@ function toTabset(tabs) {
       attributes: [
         mdxAttr("label", tab.label),
         ...(tab.icon ? [mdxAttr("icon", tab.icon)] : []),
+        ...(tab.iconPlace ? [mdxAttr("iconPlace", tab.iconPlace)] : []),
       ],
       children: tab.children,
     })),

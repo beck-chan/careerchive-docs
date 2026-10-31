@@ -19,27 +19,34 @@ subtitle: How was the CareerChive application implemented?
 
 # Row-Level Security
 
-The schema applied by running [`scripts/schema.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/schema.sql){.blank} enables row-level security on every public table. There are no `anon` or `authenticated` policies. [`createAdminClient()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/supabase.ts){.blank} talks to these tables with `SUPABASE_SECRET_KEY`, which bypasses row-level security. Grants below are for `service_role`.
+The schema applied by running [`scripts/schema.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/schema.sql){.blank} enables row-level security on every public table. [`createAdminClient()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/supabase.ts){.blank} talks to these tables with `SUPABASE_SECRET_KEY`, which bypasses row-level security. 
 
-| Table | `anon` / `authenticated` | Server (`SUPABASE_SECRET_KEY`) |
-| --- | --- | --- |
-| `settings` | none | {.select}, {.insert}, {.update}, {.delete} |
-| `login_attempts` | none | {.select}, {.insert}, {.update}, {.delete} |
-| `organizations` | none | {.select}, {.insert}, {.update}, {.delete} |
-| `days` | none | {.select}, {.insert}, {.update}, {.delete} |
-| `work` | none | {.select}, {.insert}, {.update}, {.delete} |
-| `citations` | none | {.select}, {.insert}, {.update}, {.delete} |
+There are no `anon` or `authenticated` policies — grants below are for `service_role`:
 
-- `settings` is a singleton (`id = 1`). Username and `password_hash` (scrypt) are the `FLAG_PRIVATE` login. `password_encrypted` is an AES-256-GCM copy keyed from `SESSION_SECRET` so Settings can refill the password field. Login still verifies the hash. Archive Start is the floor for creating day rows. Autogenerate From is when empty weekday shells start. `timezone` (IANA, default `UTC`) is the calendar day. Factory Reset leaves this row in place.
-- `login_attempts` is one row per failed login. Count by IP and by username independently. A fourth try in that hour is rejected without checking the password. Successful login does not clear the window.
-- `organizations` stores weekday flags Sun–Sat (`0` = Sunday … `6` = Saturday). Work orgs default Mon–Fri. Unchecking a weekday stops new auto-inserts. It does not delete rows. Hidden organizations are skipped when shells are generated.
-- `days` is one log per organization and `work_date`. Attendance is `worked`, `sick`, `stat`, `pto`, or unset. Rating is `1`–`5` or unset. Notes, rating, comments, and attendance live on this row. A trigger rejects a new `work_date` in the future, before Archive Start, before Date Active, or on or after Date Inactive.
+| Table | Server (`SUPABASE_SECRET_KEY`) |
+| --- | --- |
+| `settings` | {.select}, {.insert}, {.update}, {.delete} |
+| `login_attempts` | {.select}, {.insert}, {.update}, {.delete} |
+| `organizations` | {.select}, {.insert}, {.update}, {.delete} |
+| `days` | {.select}, {.insert}, {.update}, {.delete} |
+| `work` | {.select}, {.insert}, {.update}, {.delete} |
+| `citations` | {.select}, {.insert}, {.update}, {.delete} |
+
+- `settings` is a singleton (`id = 1`). Username and `password_hash` (scrypt) are the `FLAG_PRIVATE` login, and `password_encrypted` is an AES-256-GCM copy keyed from `SESSION_SECRET` so Settings can refill the password field. 
+- `login_attempts` is one row per failed login. Count by IP and by username independently — a fourth try in that hour is rejected without checking the password. 
+- `organizations` stores weekday flags Sun–Sat (`0` = Sunday … `6` = Saturday) for auto-generation of daily entries.
+- `days` is one log per organization and `work_date`. 
 - `work` is the Work Completed rows on a day (`title`, `description`, `link`, `position`).
-- `citations` is the Citations / Artifacts rows on a day. `attachment` is the filename shown in the UI. `attachment_key` is the Cloudflare R2 object key.
+- `citations` is the Citations / Artifacts rows on a day. `attachment` is the filename shown in the UI, and `attachment_key` is the Cloudflare R2 object key.
 
-`ensure_generated_days()` inserts empty weekday shells for each visible organization, from Autogenerate From (clamped up to Archive Start and Date Active) through today in the archive time zone, and stops the day before Date Inactive. It does nothing until Autogenerate From is set. `ON CONFLICT DO NOTHING` never overwrites a row. [`pg_cron`](https://github.com/citusdata/pg_cron){.blank} runs it hourly as `careerchive-ensure-days`. Saving an organization, moving Autogenerate From earlier, changing the time zone, signing in, and loading the archive call it too.
+# Entry Cron Jobs
 
-ChiveBot tables are a separate script. See [ChiveBot Build](/docs/chivebot-build).
+`ensure_generated_days()` inserts empty weekday shells for each visible organization, from the Autogenerate From date (further gated by Archive Start and organization Date Active) through today defined by the archive Time Zone, and stops the day before Date Inactive:
+
+- `ensure_generated_days()` does nothing until Autogenerate From is set.  
+- [`pg_cron`](https://github.com/citusdata/pg_cron){.blank} runs it hourly as `careerchive-ensure-days`. 
+- Saving an organization, moving Autogenerate From earlier, changing the Time Zone, signing in, and loading the archive call `ensure_generated_days()` too.
+
 
 # Entity Relationship Diagram
 
@@ -124,38 +131,50 @@ ChiveBot tables are a separate script. See [ChiveBot Build](/docs/chivebot-build
 
 </DocsErdGrid>
 
-# Relationships
-
-- `settings` is one row. It does not reference the other tables.
-- `login_attempts` does not reference the other tables.
-- Each organization has many `days` (`organization_id`). Deleting an organization deletes its days.
-- Each day has many `work` rows and many `citations` rows (`day_id`). Deleting a day deletes those rows.
-- `days` is unique on (`organization_id`, `work_date`).
-
 :::
 
 ## Next.js Frontend
 
-[`CareerChiveLayout`](https://github.com/beck-chan/career-chive/blob/main/src/entries/frame.tsx){.blank} calls [`loadArchive()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/archive.ts){.blank}, which reads `settings`, `organizations`, `days`, `work`, and `citations` into [`DemoProvider`](https://github.com/beck-chan/career-chive/blob/main/src/lib/demo.tsx){.blank}. Pages read that snapshot. Writes go back through the server actions in [`src/app/actions/archive.ts`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/archive.ts){.blank}.
+When CareerChive opens, [`CareerChiveLayout`](https://github.com/beck-chan/career-chive/blob/main/src/entries/frame.tsx){.blank} loads the archive once. [`loadArchive()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/archive.ts){.blank} reads `settings`, `organizations`, `days`, `work`, and `citations` into [`DemoProvider`](https://github.com/beck-chan/career-chive/blob/main/src/lib/demo.tsx){.blank}, and the pages use that copy. Saves go back through the server actions in [`src/app/actions/archive.ts`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/archive.ts){.blank}.
 
-[`AppChrome`](https://github.com/beck-chan/career-chive/blob/main/src/components/AppChrome.tsx){.blank} is the top bar: **Archive**, **Overview**, **Search**, **Organizations**, and **{.gear} (Settings)**.
+[`AppChrome`](https://github.com/beck-chan/career-chive/blob/main/src/components/AppChrome.tsx){.blank} is the top navigation:
 
-- **Archive** (`/`) is [`ArchiveView`](https://github.com/beck-chan/career-chive/blob/main/src/components/ArchiveView.tsx){.blank}: a calendar and [`DayPanel`](https://github.com/beck-chan/career-chive/blob/main/src/components/DayPanel.tsx){.blank}. Notes and comments are markdown from [`NotesEditor`](https://github.com/beck-chan/career-chive/blob/main/src/components/NotesEditor.tsx){.blank} (Lexical). Work Completed and Citations / Artifacts are drag-and-drop lists. Order is `position`.
-- **Overview** (`/overview`) is [`OverviewView`](https://github.com/beck-chan/career-chive/blob/main/src/components/OverviewView.tsx){.blank}. Counts for logged days, attendance, work, citations, and ratings are computed in the browser from the loaded archive. CSV export is built there too. Attachment links point at the R2 object.
-- **Search** (`/search`) is [`SearchShell`](https://github.com/beck-chan/career-chive/blob/main/src/components/SearchShell.tsx){.blank}. Keyword search runs in the browser over the same snapshot: work titles rank above other field text, which ranks above the organization name and day title. Filters cover organization, date, attendance, rating, and whether notes, comments, or citations are present. ChiveBot is a separate panel. See [ChiveBot Build](/docs/chivebot-build).
-- **Organizations** (`/organizations`) is [`SettingsForm`](https://github.com/beck-chan/career-chive/blob/main/src/components/SettingsForm.tsx){.blank}. Name and Date Active are required. Delete stays blocked while any day rows exist.
-- **Settings** in the top bar edits time zone, Archive Start, Autogenerate From, and login, and runs Factory Reset. Factory Reset deletes every organization (and its days) and every ChiveBot session. The `settings` row stays.
+::: {.tabset}
 
-Citations / Artifacts files go to Cloudflare R2. [`src/lib/r2.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/r2.ts){.blank} signs upload and download URLs. [`src/app/api/attachments/route.ts`](https://github.com/beck-chan/career-chive/blob/main/src/app/api/attachments/route.ts){.blank} accepts the upload and redirects a download. Object keys look like `citations/<org>/<date>/<row>/<filename>`.
+# Archive
 
-`NEXT_PUBLIC_CAREERCHIVE_PATH` ([`src/lib/paths.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/paths.ts){.blank}) is an optional mount path. [`next.config.ts`](https://github.com/beck-chan/career-chive/blob/main/next.config.ts){.blank} calls [`withCareerChiveConfig()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/withCareerChiveConfig.ts){.blank}, which rewrites that path onto these routes and inlines the flags for client components.
+(`/`) is [`ArchiveView`](https://github.com/beck-chan/career-chive/blob/main/src/components/ArchiveView.tsx){.blank}, consisting of a calendar and [`DayPanel`](https://github.com/beck-chan/career-chive/blob/main/src/components/DayPanel.tsx){.blank} daily organization logs:
 
-## User Login
+- Notes and comments are markdown from rich text [`NotesEditor`](https://github.com/beck-chan/career-chive/blob/main/src/components/NotesEditor.tsx){.blank} which uses [Lexical](https://lexical.dev){.blank}. 
+- Work Completed and Citations / Artifacts are drag-and-drop lists, with order captured in `position`.
+- Citations / Artifacts files are uploaded to Cloudflare R2. [`src/lib/r2.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/r2.ts){.blank} signs upload and download URLs, and [`src/app/api/attachments/route.ts`](https://github.com/beck-chan/career-chive/blob/main/src/app/api/attachments/route.ts){.blank} accepts the upload and redirects a download. 
 
-`FLAG_PRIVATE` gates the archive with the username and password on `settings`. The cookie is `careerchive_session` (httpOnly, path `/`, 7 days). [`signSession()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/session.ts){.blank} stores the username and an expiry and signs them with HMAC-SHA256 from `SESSION_SECRET`.
+# Overview
+
+(`/overview`) is [`OverviewView`](https://github.com/beck-chan/career-chive/blob/main/src/components/OverviewView.tsx){.blank}, which counts for logged days, attendance, work, citations, and ratings computed in the browser from the loaded archive, and builds CSV exports of Work Completed and Citations/ Artifacts. 
+
+# Search
+
+(`/search`) is [`SearchShell`](https://github.com/beck-chan/career-chive/blob/main/src/components/SearchShell.tsx){.blank}, which ranks keyword search results by work titles above other field text, which ranks above the organization name and day title. ChiveBot is a separate panel — refer to [ChiveBot Build](/docs/chivebot-build).
+
+# Organizations
+
+(`/organizations`) is [`SettingsForm`](https://github.com/beck-chan/career-chive/blob/main/src/components/SettingsForm.tsx){.blank}, which requires Name and Date Active when creating or editing an organization. Deletion of organizations is blocked while any day rows exist.
+
+# {.gear} Settings
+
+Modal that can be opened from any page with {.gear} in the top navigation.
+
+:::
+
+{/* `NEXT_PUBLIC_CAREERCHIVE_PATH` ([`src/lib/paths.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/paths.ts){.blank}) is an optional mount path. [`next.config.ts`](https://github.com/beck-chan/career-chive/blob/main/next.config.ts){.blank} calls [`withCareerChiveConfig()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/withCareerChiveConfig.ts){.blank}, which rewrites that path onto these routes and inlines the flags for client components. */}
+
+### User Login
+
+`FLAG_PRIVATE` gates the archive with the username and password on `settings`. The cookie is `careerchive_session` (httpOnly, path `/`, 7 days), and [`signSession()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/session.ts){.blank} stores the username and an expiry and signs them with HMAC-SHA256 from `SESSION_SECRET`:
 
 - [`loginAction()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/auth.ts){.blank} checks the username and verifies the password with scrypt ([`verifyPassword()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/password.ts){.blank}). Failed tries are written to `login_attempts` before the error is returned.
-- [`/login`](https://github.com/beck-chan/career-chive/blob/main/src/app/login/page.tsx){.blank} renders [`LoginForm`](https://github.com/beck-chan/career-chive/blob/main/src/components/LoginForm.tsx){.blank}. A signed-in visit redirects home.
+- [`/login`](https://github.com/beck-chan/career-chive/blob/main/src/app/login/page.tsx){.blank} renders [`LoginForm`](https://github.com/beck-chan/career-chive/blob/main/src/components/LoginForm.tsx){.blank}. A signed-in visit redirects to the CareerChive home page (`/`, Archive).
 - With `FLAG_PRIVATE` off, [`getSession()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/session.ts){.blank} returns a local session, `/login` redirects home, and **Logout** is hidden. `SESSION_SECRET` is still what encrypts the Settings password copy when a password is saved.
 
 Deleting an organization, clearing or deleting a range of days, and Factory Reset ask for that password again and check it against `password_hash`.
@@ -167,13 +186,17 @@ Flags are built on compile:
 - [`src/lib/flags.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/flags.ts){.blank} reads `process.env.FLAG_*` with `envFlag` (`true` / `1` vs `false` / `0` — unset uses the default).
 - [`withCareerChiveConfig()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/withCareerChiveConfig.ts){.blank} lists `FLAG_PRIVATE` and `FLAG_CHIVEBOT` under `env` so Next can inline them into client components.
 
-### `FLAG_PRIVATE`
+::: {.tabset}
+
+# `FLAG_PRIVATE`
 
 When set to `true`, requires the username and password from Settings before the archive loads. Default is `false`.
 
-### `FLAG_CHIVEBOT`
+# `FLAG_CHIVEBOT`
 
-When set to `true`, shows **Ask ChiveBot** on Search and writes field embeddings when a day is saved. Keyword search on that page does not use this flag. See [ChiveBot Build](/docs/chivebot-build).
+When set to `true`, shows **Ask ChiveBot** on Search and writes field embeddings when a day is saved. Refer to [ChiveBot Build](/docs/chivebot-build).
+
+:::
 
 ## Accessibility
 

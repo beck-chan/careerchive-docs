@@ -10,6 +10,7 @@ export function DocsTab({
 }: {
   label: string;
   icon?: DocsTab["icon"];
+  iconPlace?: DocsTab["iconPlace"];
   children: React.ReactNode;
 }) {
   return <>{children}</>;
@@ -21,6 +22,7 @@ function tabsFromChildren(children: React.ReactNode): DocsTab[] {
       !isValidElement<{
         label?: string;
         icon?: DocsTab["icon"];
+        iconPlace?: DocsTab["iconPlace"];
         children?: React.ReactNode;
       }>(child)
     ) {
@@ -33,6 +35,7 @@ function tabsFromChildren(children: React.ReactNode): DocsTab[] {
       {
         label: child.props.label,
         icon: child.props.icon,
+        iconPlace: child.props.iconPlace,
         content: child.props.children,
       },
     ];
@@ -53,7 +56,11 @@ export function DocsTabset({
     <div className="docs-tabset">
       <DocsTabsetChrome
         baseId={baseId}
-        tabs={resolved.map(({ label, icon }) => ({ label, icon }))}
+        tabs={resolved.map(({ label, icon, iconPlace }) => ({
+          label,
+          icon,
+          iconPlace,
+        }))}
       />
       {resolved.map((tab, index) => {
         const selected = index === 0;

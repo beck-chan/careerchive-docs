@@ -7,15 +7,25 @@ import { DocsLock } from "./DocsLock";
 export type DocsTabMeta = {
   label: string;
   icon?: "lock" | "gear";
+  iconPlace?: "before" | "after";
 };
 
-function TabLabel({ label, icon }: DocsTabMeta) {
+function TabLabel({ label, icon, iconPlace = "after" }: DocsTabMeta) {
   const glyph =
     icon === "lock" ? (
       <DocsLock />
     ) : icon === "gear" ? (
       <DocsGear />
     ) : null;
+
+  if (iconPlace === "before") {
+    return (
+      <>
+        {glyph}
+        {label}
+      </>
+    );
+  }
 
   return (
     <>
@@ -160,7 +170,7 @@ export function DocsTabsetChrome({
                 }
               }}
             >
-              <TabLabel label={tab.label} icon={tab.icon} />
+              <TabLabel label={tab.label} icon={tab.icon} iconPlace={tab.iconPlace} />
             </button>
           );
         })}
@@ -175,7 +185,11 @@ export function DocsTabsetChrome({
           onClick={() => setMenuOpen((open) => !open)}
         >
           <span className="docs-tabset-select-label">
-            <TabLabel label={activeTab?.label ?? ""} icon={activeTab?.icon} />
+            <TabLabel
+              label={activeTab?.label ?? ""}
+              icon={activeTab?.icon}
+              iconPlace={activeTab?.iconPlace}
+            />
           </span>
           <svg
             className="docs-tabset-select-chevron"
@@ -228,7 +242,7 @@ export function DocsTabsetChrome({
                   }
                 }}
               >
-                <TabLabel label={tab.label} icon={tab.icon} />
+                <TabLabel label={tab.label} icon={tab.icon} iconPlace={tab.iconPlace} />
               </button>
             );
           })}
