@@ -6,18 +6,17 @@ subtitle: How was the ChiveBot implemented?
 
 ::: {.callout}
 
-# Supabase `chivebot_entry_embedding` stores Archive field text and Gemini embeddings, and Gemini answers from those rows plus an archive overview.
+# Supabase `chivebot_entry_embedding` stores Archive field text from daily log entries and Gemini embeddings, and Gemini answers from those rows plus an organization overview when `FLAG_CHIVEBOT=true`.
 
 - [`syncDayEmbeddings()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebot.ts){.blank} writes one row per filled field when a day is saved.
-- [`sendChivebotMessage()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/chivebot.ts){.blank} embeds the question, retrieves rows, and asks Gemini to answer.
-- [`SearchShell`](https://github.com/beck-chan/career-chive/blob/main/src/components/SearchShell.tsx){.blank} is the **Ask ChiveBot** panel on Search. It calls those server actions.
+- [`sendChivebotMessage()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/chivebot.ts){.blank} embeds the question, retrieves rows, and asks Gemini to answer within [`SearchShell`](https://github.com/beck-chan/career-chive/blob/main/src/components/SearchShell.tsx){.blank}.
 
 :::
 
 ## Archive Indexing
 
-- Keyword search on Search reads the archive already loaded in the browser. It does not read `chivebot_entry_embedding`.
-- [`match_chivebot_entries`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot.sql){.blank} returns days inside the logging window only: Archive Start (today if unset) through today, then Date Active through the day before Date Inactive. An organization with no Date Active contributes nothing.
+
+[`match_chivebot_entries`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot.sql){.blank} returns days inside the logging window only — Archive Start (today if unset) through today, then organization Date Active through the day before Date Inactive.
 
 ::: {.tabset}
 
@@ -25,11 +24,9 @@ subtitle: How was the ChiveBot implemented?
 
 [`src/lib/chivebot.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebot.ts){.blank} builds the text that later goes into `chivebot_entry_embedding`:
 
-- One row per filled field: notes, comments, attendance, rating, Work Completed title, description, and link, and Citations / Artifacts title, url, and filename.
-- The stored text is the organization name, the day title, the field label, and the value. Attendance and rating use the same labels as the Archive form.
-- Empty fields are skipped, so an auto-generated shell with nothing filled in has no rows.
-- [`saveDay()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/archive.ts){.blank} calls `syncDayEmbeddings()`. A field whose text is unchanged and already has a vector skips Gemini. A field that was cleared is deleted.
-- Clearing a date range calls [`deleteDayEmbeddings()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebot.ts){.blank}. Deleting a day, a work row, a citation, or an organization drops matching rows by foreign key.
+- One row per filled daily entry field. Empty fields are skipped, so an auto-generated shell with nothing filled in has no rows.
+- [`saveDay()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/archive.ts){.blank} calls `syncDayEmbeddings()`. A field whose text is unchanged and already has a vector skips Gemini, and a field that was cleared is deleted.
+- Clearing a date range calls [`deleteDayEmbeddings()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebot.ts){.blank} — deleting a day, a work row, a citation, or an organization drops matching rows by foreign key.
 
 # On Send
 
@@ -38,39 +35,36 @@ subtitle: How was the ChiveBot implemented?
 - Gemini (`gemini-embedding-001`, 768 dimensions, `RETRIEVAL_DOCUMENT`) turns field text into vectors in batches of 16. Text is clipped at 8000 characters. [`src/lib/gemini.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/gemini.ts){.blank} sends those requests with `GEMINI_API_KEY`.
 - A matching stored text that already has a vector skips Gemini and the write.
 - If Gemini quota fails on save, the Archive write still stands. Retrieve uses rows that already have a vector.
-- Rows are written with `SUPABASE_SECRET_KEY`. [`scripts/chivebot.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot.sql){.blank} creates this table after [`scripts/schema.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/schema.sql){.blank}. It is not part of that file. `FLAG_CHIVEBOT` must be on or these writes return immediately.
+{/* - Rows are written with `SUPABASE_SECRET_KEY`. [`scripts/chivebot.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot.sql){.blank} creates this table after [`scripts/schema.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/schema.sql){.blank}. It is not part of that file. `FLAG_CHIVEBOT` must be on or these writes return immediately. */}
 
 :::
 
 ## Chatbot Interface
 
-**Ask ChiveBot** on Search ([`SearchShell`](https://github.com/beck-chan/career-chive/blob/main/src/components/SearchShell.tsx){.blank}) opens the panel. [`src/app/actions/chivebot.ts`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/chivebot.ts){.blank}:
+ [`src/app/actions/chivebot.ts`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/chivebot.ts){.blank}:
 
 - Restores message history when the browser has a `chivebot_session` cookie.
 - Looks up matching fields in `chivebot_entry_embedding`, then asks Gemini to write a reply from those excerpts and an archive overview on **Send**.
 - [Clears the message history](#chat-history) by dropping the `chivebot_session` cookie and deleting chat sessions when **Clear Chat** is clicked.
 
-The panel stays off until `FLAG_CHIVEBOT` is on, `GEMINI_API_KEY` is set, and `chivebot_session` exists. Otherwise it shows that ChiveBot is disabled or cannot connect.
+{/* The panel stays off until `FLAG_CHIVEBOT` is on, `GEMINI_API_KEY` is set, and `chivebot_session` exists. Otherwise it shows that ChiveBot is disabled or cannot connect. */}
 
 ::: {.tabset}
 
 # Retrieval
 
 - Gemini (`gemini-embedding-001`, 768 dimensions, `RETRIEVAL_QUERY`) turns the question into a vector so fields can match by meaning.
-- That vector is stored on `chivebot_query_embedding` ([`scripts/chivebot.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot.sql){.blank}). The question text stays on `chivebot_message`. Row-level security is on with no `anon` / `authenticated` policies. The server actions read and write those rows with `SUPABASE_SECRET_KEY`.
+- That vector is stored on `chivebot_query_embedding` ([`scripts/chivebot.sql`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot.sql){.blank}), and the question text stays on `chivebot_message`. Row-level security is on with no `anon` / `authenticated` policies — server actions read and write to those rows with `SUPABASE_SECRET_KEY`.
 - Postgres then runs [`match_chivebot_entries`](https://github.com/beck-chan/career-chive/blob/main/scripts/chivebot.sql){.blank} (cosine distance) and keeps the closest 16 fields that already sit inside the logging window. [`sendChivebotMessage()`](https://github.com/beck-chan/career-chive/blob/main/src/app/actions/chivebot.ts){.blank} applies that same window again so a day outside it cannot be quoted.
-- [`loadArchiveOverview()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebot.ts){.blank} adds every organization, including hidden ones and ones with no days in this window, plus filled-in days and empty logs, newest first, up to 80 of each. A hidden organization is marked in that text.
+- [`loadArchiveOverview()`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebot.ts){.blank} adds every organization, including hidden ones and ones with no days in this window, plus filled-in days and empty logs, newest first, up to 80 of each.
 - If the question cannot be embedded, **Send** stops. The panel shows the Gemini quota message, or that ChiveBot could not answer.
 
 # Answers
 
-- Gemini (`gemini-flash-lite-latest`) writes the reply from the overview and those field excerpts. Temperature is `0.2`. The reply waits until Gemini finishes, then it is saved.
-- It prefers a short paragraph. When it refers to a specific day, it includes a markdown link to that Archive day (`/?org=<id>&iso=<date>`). More than three days become a bullet list.
-- Questions about organizations use the overview list: names, hidden or not, Date Active, and Date Inactive.
-- If a day or organization is marked hidden, the reply says so.
-- If the excerpts do not contain the answer, it says it could not find anything in the archive. It does not fabricate entries.
-- The last 12 messages in the thread are sent with the question.
-- [`src/lib/chivebotChat.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebotChat.ts){.blank} normalizes the markdown and the day links before the reply is stored. `citations` on the assistant row records the org and day links used in that text.
+- Gemini (`gemini-flash-lite-latest`) writes the reply from the overview and those field excerpts. 
+- If the excerpts do not contain the answer, ChiveBot says it could not find anything in the archive. 
+- Answers are also instructed not invent entries, fabricate information, or provide general information unrelated to the logged CareerChive archive entries or organizations.
+{/* - [`src/lib/chivebotChat.ts`](https://github.com/beck-chan/career-chive/blob/main/src/lib/chivebotChat.ts){.blank} normalizes the markdown and the day links before the reply is stored. `citations` on the assistant row records the org and day links used in that text. */}
 
 :::
 
@@ -83,9 +77,9 @@ The panel stays off until `FLAG_CHIVEBOT` is on, `GEMINI_API_KEY` is set, and `c
 
 # `chivebot_session`
 
-- `chivebot_session` is one conversation — cookie `chivebot_session` (httpOnly, path `/`, one year) stores that row's ID so opening **Ask ChiveBot** again restores the same thread.
+- `chivebot_session` is one conversation — cookie `chivebot_session` (httpOnly, path `/`, one year) stores that row's ID so opening ChiveBot again restores the same thread.
 - **Send** creates that session when the cookie is missing or stale, and writes the question immediately, then the reply after Gemini finishes.
-- **Clear Chat** deletes that cookie and every session row. Factory Reset deletes these sessions too.
+- **Clear Chat** deletes that cookie and every session row. 
 
 # `chivebot_message`
 
