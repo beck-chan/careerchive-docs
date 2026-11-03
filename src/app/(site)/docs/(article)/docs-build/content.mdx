@@ -16,7 +16,7 @@ subtitle: How are these docs implemented?
 
 My custom `npm run docs` script starts Next with `FLAG_APP=false` so `/beck` is rewritten to a 404 and the installed CareerChive application is not served. 
 
-Defined as a [`package.json`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} script, `npm run docs` calls [`scripts/docs-dev.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/docs-dev.mjs){.blank}, which starts the same `next dev` as `npm run dev`, then sets `FLAG_APP=false` on that process:
+Defined as a [`package.json`](https://github.com/beck-chan/careerchive-docs/blob/main/package.json){.blank} script, `npm run docs` calls [`scripts/docs-dev.mjs`](https://github.com/beck-chan/careerchive-docs/blob/main/scripts/docs-dev.mjs){.blank}, which starts the same `next dev` as `npm run dev` with `FLAG_APP=false` set on that process:
 
 - [`src/lib/flags.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/flags.ts){.blank} reads that environment variable as `flags.app`. 
 - [`src/proxy.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/proxy.ts){.blank} rewrites `/beck` while that flag is off.
@@ -72,7 +72,7 @@ The Remark plugin also pulls page metadata out of the paired `content.mdx` so `p
 
 The main documentation landing page (`/docs`) lives at [`src/app/(site)/docs/page.tsx`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/page.tsx){.blank}, and is built by React, not MDX and hides the sidebar navigation:
 
-- A `.docs-index` wrapper is what switches the layout from a guide to a landing.
+- A `.docs-index` wrapper styles the landing cards.
 - Card titles and subtitles come from each guide's `content.mdx` through [`docs-page-meta.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/_nav/docs-page-meta.ts){.blank}.
 
 This landing page:
@@ -110,7 +110,7 @@ The explorer catalogs operations from a live PostgREST OpenAPI document. [`loadD
 
 [`loadDatabaseOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/loadDatabaseOpenApi.ts){.blank}:
 
-- Caches the fetch (React `cache()` plus a 60-second revalidate). Guides do not fetch OpenAPI. The API Library loads it when the page or [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank} is opened.
+- Caches the fetch (React `cache()` plus a 60-second revalidate). The API Library loads it when the page, [`/docs/api/explorer`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/explorer/route.ts){.blank}, or [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank} is opened. 
 - [`swaggerToOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/swaggerToOpenApi.ts){.blank} turns the PostgREST document into OpenAPI 3.1.
 - After fetch it stamps the CareerChive API `info` title and description, and `apikey` security on every operation. `servers` are removed.
 - [`typesToOpenApi.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/typesToOpenApi.ts){.blank} applies that `apikey` security. [`apiCatalog.ts`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/apiCatalog.ts){.blank} turns the same spec into the API search sidebar's tags and operations, using Scalar's tag anchors.
@@ -155,7 +155,8 @@ The explorer catalogs operations from a live PostgREST OpenAPI document. [`loadD
 
 # [`composeDocsCorpus`](https://github.com/beck-chan/careerchive-docs/blob/main/src/lib/docs/compose.ts){.blank} reads each `content.mdx` page under `src/app/(site)/docs` and inserts shared `_snippets`.
 
-- Humans search that copy with Search or Search the API.
+- Humans search that copy within the inline **Search**. 
+- **Search the API** filters the OpenAPI catalog instead from [`/docs/api/catalog`](https://github.com/beck-chan/careerchive-docs/blob/main/src/app/%28site%29/docs/%28article%29/api/catalog/route.ts){.blank}.
 - Large language models (LLMs) find it through [`/llms.txt`](/llms.txt){.blank} and `/docs/<slug>.md`.
 
 Nothing is hand-maintained for search or LLM catalogs. On each deploy, compose re-reads `.mdx` pages when `/docs/search-index`, `/llms.txt`, or `/docs/<slug>.md` are built — not on every documentation page render.
