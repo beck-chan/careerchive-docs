@@ -426,7 +426,7 @@ export function DocsBotApiReferenceView({ spec }: { spec: OpenApiSpec }) {
       {!mounted ? <p className="docs-api-pending">Loading API reference…</p> : null}
       <div
         ref={hostRef}
-        className={`docs-bot-api-host${mounted ? "" : " is-pending"}`}
+        className="docs-bot-api-host"
         aria-busy={mounted ? undefined : true}
       />
     </div>

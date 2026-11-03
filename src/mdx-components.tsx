@@ -157,7 +157,7 @@ const components: MDXComponents = {
       return (
         <DocsTaskItem
           defaultChecked={task.checked}
-          className={["docs-list-item", ...names].filter(Boolean).join(" ")}
+          className={names.join(" ") || undefined}
           {...props}
         >
           {task.rest}
@@ -165,10 +165,7 @@ const components: MDXComponents = {
       );
     }
     return (
-      <li
-        className={["docs-list-item", ...names].filter(Boolean).join(" ")}
-        {...props}
-      >
+      <li className={names.join(" ") || undefined} {...props}>
         {children}
       </li>
     );

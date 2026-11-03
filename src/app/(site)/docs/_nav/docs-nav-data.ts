@@ -9,17 +9,6 @@ export type DocsNavSection = {
   collapsible?: boolean;
 };
 
-export function docsPageMeta(pathname: string) {
-  const path = pathname.endsWith("/") && pathname.length > 1
-    ? pathname.slice(0, -1)
-    : pathname;
-  for (const section of DOCS_NAV_SECTIONS) {
-    const item = section.items.find((entry) => entry.href === path);
-    if (item) return { title: item.label, subtitle: section.title };
-  }
-  return { title: "Docs", subtitle: "" };
-}
-
 export const DOCS_NAV_SECTIONS: DocsNavSection[] = [
   {
     title: "Installation",

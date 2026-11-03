@@ -2163,20 +2163,6 @@ html[data-theme="dark"] .docs-toc-link.is-active:hover {
   border-bottom: 8px solid var(--page);
 }
 
-.search-chat-history.is-centered {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.search-chat-placeholder {
-  margin: 0;
-  color: var(--title-muted);
-  font-family: var(--main-font);
-  font-size: calc(1.05rem * var(--main-scale));
-}
-
 .search-chat-results {
   display: flex;
   flex-direction: column;
@@ -2335,13 +2321,6 @@ html[data-theme="dark"] .search-chat-compose textarea::placeholder {
 .search-chat .text-link:disabled:hover {
   color: var(--quiet-soft);
   cursor: default;
-}
-
-.search-chat .text-btn:disabled,
-.search-chat .text-btn:disabled:hover {
-  color: var(--quiet-soft);
-  border-color: var(--quiet-soft);
-  cursor: not-allowed;
 }
 
 .docs-article.mdx-page {
