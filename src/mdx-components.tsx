@@ -141,10 +141,7 @@ const components: MDXComponents = {
   ),
   table: ({ children, className, ...props }) => (
     <div className="docs-table-wrap">
-      <table
-        {...props}
-        className={["docs-table", className].filter(Boolean).join(" ")}
-      >
+      <table {...props} className={className}>
         {children}
       </table>
     </div>
